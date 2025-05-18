@@ -17,7 +17,7 @@ head(Boston)
 # Attraverso il comando lm() è possibile adattare un modello lineare ai dati.
 
 # Si assegna all'oggetto lm.fit l'output della funzione lm() con la quale si
-# adatta un modello di regressione lineare ai dati, La varabile di risposta del
+# adatta un modello di regressione lineare ai dati, La variabile di risposta del
 # modello è medv, mentre la variabile indipendente o regressore è lstat.
 # Entrambe le variabili sono contenute nel dataset Boston
 ?lm()
@@ -25,9 +25,10 @@ lm.fit <- lm(medv ~ lstat, data = Boston)
 (lm.fit)
 
 # Attraverso la funzione summary applicata ad un oggetto di classe lm ci
-# restituisce l'output di un modello di regressione lineare, in cui possiamo
-# i principali attributi, come il min, max, 1,2,3 quartile dei resudui, i
-# coefficienti del modello con std. error ecc. e altre metriche come R quadro
+# restituisce alcune infomazioni di un modello di regressione lineare, in cui
+# possiamo notare i principali attributi, come il min, max, 1,2,3 quartile dei
+# resudui, i coefficienti del modello con std. error ecc. e altre metriche
+# come ad esempio l'R quadro
 summary(lm.fit)
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -134,8 +135,9 @@ plot(1:20, 1:20, pch = 1:20)
     # 
     # 6. "Cook's dist vs Lev./(1-Lev.)"
 
-# I grafici di default  1, 2, 3 e 5. Possiamo decidere noi usando passando il
-# vettore dei grafici che desideriamo come parametro "which"
+# I grafici di default  1, 2, 3 e 5. Possiamo decidere quali grafici farci
+# restituire passando il vettore dei grafici che desideriamo come parametro
+# "which" alla funzione plot()
 ?plot.lm
 plot(lm.fit)
 
@@ -177,7 +179,7 @@ plot(lm.fit)
 # Il grafico in basso a destra mostra l'indice di leva (asse delle ascisse),
 # ovvero la misura dell’influenza potenziale di un punto, e i residui
 # studentizzati (asse delle ordinate). La misura di Leverage indica, quindi,
-# quanto un'osservazione è estrema e quindi influenza i valori delle stime
+# quanto un'osservazione è estrema e quindi influenza le stime
 # dei coefficienti.
 # Le linee rosse tratteggiate rappresentano i contorni delle distanze di Cook,
 # che combinano leverage e grandezza del residuo per identificare i punti
@@ -188,47 +190,192 @@ plot(lm.fit)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-
+# Attraverso la funzione plot avente come parametri il vettore ottenuto per
+# mezzo della funzione predict() nell'asse delle ascisse e il vettore
+# ottenuto tramite la funzione residuals() nell'asse delle ordinte
+# possiamo riprodurre la nuvola dei punti presente nel grafico
+# "Residuals vs Fitted"
 plot(predict(lm.fit), residuals(lm.fit))
+predict(lm.fit)
+residuals(lm.fit)
+
+# Attraverso la funzione plot avente come parametri il vettore ottenuto per
+# mezzo della funzione predict() nell'asse delle ascisse e il vettore
+# ottenuto tramite la funzione rstudent() nell'asse delle ordinte
+# possiamo riprodurre la nuvola dei punti presente nel grafico
+# "Scale-Location"
 plot(predict(lm.fit), rstudent(lm.fit))
 
+# Attraverso la funzione hatvalues() è possibile calcolare le statistiche di
+# leva per ogni unità statistica. Ogni valore di questo vettore corrisponde
+# ai punti della diagonale della HAT Matrix ("matrice che mette il
+# cappello alla Y")
+hatvalues(lm.fit)
+
+# Attraverso la funzione plot() avente come parametro proprio il vettore
+# ottenuto usando la funzione hatvalues() è possibile vedere graficamente
+# per ogni unità il valore ottenuto
 plot(hatvalues(lm.fit))
+
+# Attraverso la funzione which.max() è possibile farsi restituire il valore
+# massimo del vettore ottenuto tramite la funzione hatvalues() passando come
+# parametro lm.fit
 which.max(hatvalues(lm.fit))
 
+# Regressione multipla
+# Si assegna all'oggetto lm.fit l'output ottenuto attraverso la funzione lm()
+# attraverso la quale è possibile adattare un modello di regressione lineare
+# ai dati. La variabile di risposta del modello è medv, mentre i due regressori
+# sono lstat ed age. Le 3 variabili sono contenute nel dataset Boston
 lm.fit <- lm(medv ~ lstat + age, data = Boston)
-summary(lm.fit) 
-
-lm.fit <- lm(medv ~ ., data = Boston)
 summary(lm.fit)
 
-library(car) # per il vif
+# Si assegna all'oggetto lm.fit l'output ottenuto attraverso la funzione lm()
+# attraverso la quale è possibile adattare un modello di regressione lineare
+# ai dati. La variabile di risposta del modello è medv, mentre i regressori
+# sono tutte le variabili contenute all'interno del dataset Boston, al netto
+# di medv
+lm.fit <- lm(medv ~ ., data = Boston)
+summary(lm.fit)
+# Dal summary() precedente notiamo che il p-value di age è 0.8
+
+# Attraverso la funzione library() carichiamo il pacchetto "car", il quale
+# contiene tra i vari oggetti anche la funzione vif()
+library(car)
+
+# Attraverso la funzione vif() è possibile calcolare il variance inflation
+# factor di ogni regressore del modello in lm.fit. La misura del VIF è data
+# da 1/(1-R^2) dove R^2 è l'R quadro del modello ottenuto regredendo la
+# variabile in oggetto su tutte le altre, ciò viene fatto per ogni variabile
+# indipendente del modello.
+# Attraverso il VIF si valuta quindi se vi sono potenziali problemi di
+# collinearità, questo può accadere quando 2 o più variabili contengono
+# delle informazioni simili, dunque ne basterebbe solamente una.
+# Se il VIF è indicativamente un numero maggiore di 5 è possibile andare
+# ad indagare cosa porta ad essere un numero così elevato.
+# La variabile tax, ad esempio, potrebbe essere un punto da attenzionare
 vif(lm.fit)
 
+# Assegno all'oggetto lm.fit1 l'output di un modello di regressione lineare
+# ottenuto per mezzo della funzione lm() attraverso la quale adattiamo un
+# modello di regressione lineare ai dati in cui la variabile di risposta è
+# medv, mentre i regresori sono tutte le altre variabili di Boston eccetto
+# la variabile age (rimossa probabilmente in quanto il p-value era elevato)
 lm.fit1 <- lm(medv ~ . - age, data = Boston)
 summary(lm.fit1)
 
-
+# Utilizziamo il comando summary() passando come argomento la funzione lm(),
+# che adatta un modello di regressione lineare ai dati. In questo caso,
+# la variabile di risposta è 'medv', mentre i regressori sono 'lstat',
+# 'age' e la loro interazione (lstat * age).
+# Questo modello ci consente di verificare se la variabile 'age' sia
+# effettivamente da escludere oppure se, attraverso l'interazione con 'lstat',
+# contribuisca in modo significativo alla spiegazione della variabilità
+# di 'medv'
 summary(lm(medv ~ lstat * age, data = Boston))
 
 
+# Coefficients:
+#               Estimate Std. Error t value Pr(>|t|)
+# (Intercept) 36.0885359  1.4698355  24.553  < 2e-16 ***
+# lstat       -1.3921168  0.1674555  -8.313 8.78e-16 ***
+# age         -0.0007209  0.0198792  -0.036   0.9711
+# lstat:age    0.0041560  0.0018518   2.244   0.0252 *
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Dall'output del summary() osserviamo che il termine di interazione tra 'lstat'
+# e 'age' ha un p-value di circa 0.025. Questo valore è inferiore al consueto
+# livello di significatività del 5%, suggerendo che l'interazione sia
+# statisticamente significativa.
+# Di conseguenza, non possiamo concludere con certezza che la variabile 'age'
+# sia irrilevante: anche se il suo effetto principale non fosse significativo,
+# la sua interazione con 'lstat' potrebbe comunque avere un ruolo importante
+# nel modello.
+
+# Trasformazioni non lineari dei predittori
+# Assegno all'oggetto lm.fit2 l'output di un modello di regressione lineare
+# ottenuto con la funzione lm(), in cui la variabile di risposta è medv
+# e i predittori sono lstat e lstat al quadrato (per modellare una relazione
+# non lineare).
+# La funzione I() serve per calcolare lstat^2 direttamente nella formula,
+# evitando che R interpreti l'operatore ^ come una formula speciale.
 lm.fit2 <- lm(medv ~ lstat + I(lstat^2))
 summary(lm.fit2)
 
-anova(lm.fit, lm.fit2)
+# Usiamo un’analisi della varianza per confrontare lm.fit (lineare) con
+# lm.fit2 (quadratico):
 lm.fit <- lm(medv ~ lstat)
+anova(lm.fit, lm.fit2)
 
+# Il test F confronta il modello più semplice (lm.fit) con quello più
+#  complesso (lm.fit2). Ipotesi nulla: il termine quadratico (lstat^2) non
+# aggiunge informazione significativa. Se il p-value è basso → rifiutiamo H0
+# → il modello lm.fit2 è significativamente migliore.
+
+# Attenzione: la validità della statistica F dipende dalla normalità dei
+# residui. Infatti la F nasce dal rapporto tra due chi-quadro, che a loro
+# volta derivano da variabili Normali.
+# Quindi: se i residui non sono Normali, il test F è approssimato (non esatto).
+
+# Soluzioni se la normalità è dubbia:
+# - Applicare trasformazioni (es. log(medv)) per stabilizzare la varianza e
+# migliorare la normalità
+# - Affidarsi all’approssimazione asintotica: se n è grande, possiamo usare
+# la teoria del limite centrale (CLT), Slutsky e altri teoremi che giustificano
+# l’uso della F anche in caso di deviazioni moderate.
+
+# CONCLUSIONE:
+# Il modello lm.fit2, che include una trasformazione non lineare del
+# predittore, mostra un miglioramento evidente nella qualità della regressione,
+# sia a livello grafico (residui più casuali), sia a livello statistico
+# (anova mostra un miglioramento significativo).
 par(mfrow = c(2, 2))
 plot(lm.fit2)
 
+# Assegno all'oggetto lm.fit5 l'output della funzione lm() attraverso la quale
+# adatto un modello di regressione lineare ai dati dove la variabile di risposta
+# è medv, mentre le variabili indipendenti sono date dalla variabile lstat dal
+# grado pari a 1 al grado pari a 5 ottenute per mezzo della funzione poly(),
+# la quale viene utilizzata direttamente all'interno della funzione lm().
+# Lstat viene trasformata internamente in un set di 5 variabili ortogonali.
+# Questo permette di evitare problemi di collinearità tra
+# lstat, lstat^2, ..., lstat^5.
 lm.fit5 <- lm(medv ~ poly(lstat, 5))
 summary(lm.fit5)
 
+# Utilizzando un polinomio di grado 5 come variabili independenti del modello
+# la flessibilità aumenta, ma si rischia l’overfitting.
+# Il valore di R^2 aumenta, ma ciò non garantisce una migliore capacità
+# predittiva su nuovi dati (MSE di test potrebbe peggiorare)
+# Il compromesso flessibilità / generalizzazione è cruciale → si valuta con
+# tecniche come validazione incrociata
+
+# Attraverso il comando summary è possibile riportare in output un sommario
+# dell'output di un modello lineare del tipo Y = B0 + B1*log(rm) + epsilon
+# dove attraverso la funzione log() è possibile linearizzare una relazione
+# non lineare e stabilizzare la varianza
 summary(lm(medv ~ log(rm), data = Boston))
 
+# Tramite il comando head() è possibile visualizzare le prime righe del
+# dataset Carseats, disponibile nel pacchetto ISLR
 head(Carseats)
 
-
+# Assegno all'oggetto lm.fit l'output di un modello lineare ottenuto
+# tramite la funzione lm(), quale permette di adattare un modello lineare ai
+# dati. La variabile dipendente è Sales, mentre le variabili indipendenti
+# sono tutte le variabili contenute in Carseats eccetto Sales e con l'aggiunta
+# dei termini di iterazione Income:Advertising e Price:Age
 lm.fit <- lm(Sales ~ . + Income:Advertising + Price:Age, data = Carseats)
 summary(lm.fit)
 
+# Attraverso la funzione contrasts() ottengo sia le categorie di ShelveLoc, sia
+# il modo in cui R codifica una variabile categoriale
 contrasts(Carseats$ShelveLoc)
+# ShelveLoc è una variabile categoriale con tre livelli: "Bad", "Medium", "Good"
+# R la trasforma in variabili dummy (indicatori binari), usando per default
+# la codifica a trattamento
+# il primo livello alfabetico ("Bad") è il riferimento (baseline)
+# vengono create due variabili: Medium vs Bad, Good vs Bad
+# I coefficienti nella regressione indicano l'effetto differenziale rispetto
+# al riferimento
