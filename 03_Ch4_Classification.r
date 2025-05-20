@@ -304,3 +304,100 @@ library(pROC)
 ?roc
 par(mfrow=c(1,1))
 roc(Direction.2005, glm.probs, plot=T, print.auc=T, col = "blue")
+
+
+##################################################
+####### Linear Discriminant Analysis (LDA) #######
+##################################################
+
+library(MASS) # Carichiamo il pacchetto MASS
+
+# Assegniamo all'oggetto lda.fit l'output della funzione lda() contenuta
+# all'interno del pacchetto MASS, la quale permette di eseguire tutte
+# le istruzioni per effettuare un'analisi discriminante lineare.
+# Passiamo come parametri della funzione la specificazione del modello
+# in cui abbiamo come variabile di risposta Direction e come variabili
+# indipendenti Lag1 e Lag2, contenute nel dataset Smarket, nel quale
+# verranno selezionate un sottoinsieme di righe per il training del
+# modello, nello specifico le righe per cui alla posizione i-esima
+# del vettore booleano train è presente TRUE
+lda.fit <- lda(Direction ~ Lag1 + Lag2 , data = Smarket , subset = train)
+
+# Eseguendo lda.fit otteniamo l'output della funzione lda() salvata
+# in precedenza. lda.fit è un oggetto di classe lda.
+lda.fit
+class(lda.fit) # Per vedere di che classe
+names(lda.fit) # Per vedere cosa contiene
+
+# Call:
+# lda(Direction ~ Lag1 + Lag2, data = Smarket, subset = train)
+# 
+# Prior probabilities of groups:
+#     Down       Up
+# 0.491984 0.508016
+# 
+# Group means:
+#             Lag1        Lag2
+# Down  0.04279022  0.03389409
+# Up   -0.03954635 -0.03132544
+# 
+# Coefficients of linear discriminants:
+#             LD1
+# Lag1 -0.6420190
+# Lag2 -0.5135293
+
+# L'output stampato contiene le seguenti informazioni:
+# - La chiamata alla funzione
+# - Le probabilità a priori: 
+# - Le medie di gruppo: 
+# - Coefficienti dei discriminanti lineari:
+
+# LD1 è possibile scriverlo nel seguente modo:
+#   LD1 = - 0.64 * Lag1 - 0.51 * Lag2
+
+#
+plot (lda.fit)
+
+#
+lda.pred <- predict(lda.fit , Smarket.2005)
+
+#
+names(lda.pred)
+
+#
+lda.class <- lda.pred$class
+
+#
+table (lda.class, Direction.2005)
+
+#
+mean (lda.class == Direction .2005)
+
+#
+sum (lda.pred$posterior[, 1] >= .5)
+
+#
+sum (lda.pred$posterior[, 1] < .5)
+
+#
+lda.pred$posterior[1:20, 1]
+
+#
+lda.class[1:20]
+
+#
+sum (lda.pred$posterior[, 1] > .9)
+
+
+###############
+## ROC CURVE ##
+###############
+
+#
+roc(Direction.2005, lda.pred$posterior[,1], plot=T)
+
+
+
+#####################################################
+####### Quadratic Discriminant Analysis (QDA) #######
+#####################################################
