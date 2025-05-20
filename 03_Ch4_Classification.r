@@ -144,9 +144,26 @@ summary(glm.fits)$coef[, 4]
 # funzione predict() alla quale passiamo l'oggetto glm.fits e
 # specifichiamo type = "response" affinchè ci restituisca le
 # probabilità condizionate come previsioni.
-# Ovvero la probabilità che xi appartenga alla classe codificata
-# con 1 ("Up")
+# Ovvero la probabilità: P(Y=1|X), dove Y=1 è la classe codificata
+# con 1 da R (vedi sotto in contrasts)
+# Non avendo specificato il parametro newdata, di default utilizza
+# gli stessi dati utilizzati in fase di train, ovvero il data frame
+# Smarket
 glm.probs <- predict(glm.fits, type = "response")
+
+# Se non si esplicita il parametro type, di default sarà type = link
+# ovvero restituisce i valori del predittore lineare (cioè la
+# combinazione lineare dei coefficienti b0 + b1x1 + b2x2 + ...),
+# invece con type = response trasforma i valori lineari nel loro
+# nel range [0,1], quindi in questo caso essendo
+# family = binomial con link logit basta sostituire il valore di
+# link alla funzione 1 / (1 + exp(-valore))
+?predict.glm
+predict(glm.fits)[1:10] # restituisce i valori del predittore lineare
+
+predict(glm.fits, type = "response")[1:10]
+# oppure
+1 / (1 + exp(-predict(glm.fits)[1:10]))
 
 # stampiamo i primi 10 elementi di glm.probs
 glm.probs[1:10]
@@ -155,47 +172,135 @@ glm.probs[1:10]
 # le classi della variabile Direction
 contrasts(Direction)
 
+# Assegniamo all'oggetto glm.pred un vettore di lunghezza 1250 con
+# tutti gli elementi uguali a "Down"
 glm.pred <- rep("Down", 1250)
 
+# Agli elementi di glm.pred tali per cui il corrispettivo
+# elemento del vettore glm.probs ha un valore maggiore di 0.5,
+# assegniamo la stringa "Up" sovrascrivendoli.
+# La condizione all'interno delle parentesi quadre genera un
+# vettore booleano di T o F senza assegnarlo ad alcun oggetto
 glm.pred[glm.probs > .5] = "Up"
 
-table (glm.pred , Direction)
+# Attraverso il comando table() otteniamo una matrice di confusione,
+# o tabella di contingenza, che consente di confrontare i valori
+# predetti dal modello (glm.pred) con i valori osservati reali della
+# variabile di risposta (Direction)
+table(glm.pred , Direction)
 
-mean (glm.pred == Direction)
+# Attraverso il comando mean() applicato ad una condizione logica
+# che restituisce un vettore booleano, dove gli elementi saranno
+# TRUE se la condizione è verificato, FALSE se non lo è.
+# Dunque, il comando seguente restituisce quanti elementi sono uguali
+# a TRUE sul totale
+mean(glm.pred == Direction)
 
+# Si assegna all'oggetto train un vettore booleano di lunghezza pari a
+# quella di Year e i cui elementi saranno TRUE se la condizione è
+# verificata, FALSE altrimenti
 train <- (Year < 2005)
+train[1]
 
-Smarket.2005 <- Smarket[!train , ]
+train[1] == 'TRUE'  # TRUE
+train[1] == 'T'     # FALSE
 
-dim (Smarket.2005)
+# Assegniamo all'oggetto Smarket.2005 il data frame che sarà composto
+# dalle medesime colonne di Smarket, ma selezionando solamente le righe
+# tali per cui l'elemento i-esimo di !train sarà uguale a TRUE, ovvero
+# tutte le righe i cui elementi di train sono = FALSE
+Smarket.2005 <- Smarket[!train,]
 
+class(Smarket.2005) # "data.frame"
+
+?print
+print(cbind(train[1:10],!train[1:10]))
+
+# Attraverso il comando dim() stampiamo in output le dimensioni del
+# dataframe Smarket.2005
+dim(Smarket.2005) # 252 righe x 9 colonne
+
+# Assegniamo all'oggetto Direction.2005 i soli elementi dell'oggetto
+# Direction tali per cui l'elemento i-esimo del vettore booleano !train
+# è uguale a TRUE, selezionando pertanto un sottoinsieme dell'oggetto
+# Direction
 Direction.2005 <- Direction[!train]
+class(Direction.2005) # "factor"
 
-glm.fits <- glm ( Direction ∼ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume,
+# Assegniamo all'oggetto glm.fits l'output della funzione glm() la quale
+# ci permette di adattare un modello di regressione logistica
+# (family = binomial) ai dati del data frame Smarket dove le righe del
+# data frame sono selezionate attraverso il parametro subset = train
+# che permette di selezionare l'i-esima riga di Smarket se l'elemento
+# i-esimo del vettore booleano train è uguale a TRUE
+glm.fits <- glm ( Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume,
     data = Smarket, family = binomial , subset = train)
 
+# Si assegna all'oggetto glm.probs il vettore delle previsioni utilizzando
+# l'output del modello di regressione logistica salvato in glm.fits,
+# adattando il modello ai nuovi dati contenuti in Smarket.2005
+# utilizzando il parametro type = response verranno salvati all'interno
+# di glm.probs le probabilità P(Y=1|X)
 glm.probs <- predict(glm.fits, Smarket.2005, type = "response")
+glm.probs
+class(glm.probs)
 
+# Ripetiamo i passaggi effettuati in precedenza, ma questa volta basandoci
+# sui nuovi dati (di test), non utilizzati per il training del modello
 glm.pred <- rep ("Down", 252)
 glm.pred[glm.probs > .5] <- "Up"
 
-table (glm.pred , Direction.2005)
+table(glm.pred , Direction.2005) # Tavola di contingenza
+# glm.pred Down Up
+#     Down   77 97
+#     Up     34 44
 
-mean (glm.pred == Direction.2005)
+mean(glm.pred == Direction.2005) # Accuracy
+# 0.48
 
-mean (glm.pred != Direction.2005)
+mean(glm.pred != Direction.2005) # Test error
+# 0.52
 
-glm.fits <- glm (Direction ∼ Lag1 + Lag2 , data = Smarket, family = binomial , subset = train)
+# Ripetiamo gli stessi passaggi fatti in precedenza per effettuare il train
+# del modello sui dati di train e tenere da parte un dataset di test, ma
+# queta volta utilizziamo un modello più parsimonioso, ovvero con 2
+# variabili indipendenti, Lag1 e Lag2
+glm.fits <- glm (Direction ~ Lag1 + Lag2 , data = Smarket,
+    family = binomial , subset = train)
 
-glm.probs <- predict (glm.fits , Smarket.2005, type = "response")
+glm.probs <- predict(glm.fits , Smarket.2005, type = "response")
+
 glm.pred <- rep ("Down", 252)
-glm.pred[glm.probs > .5] <- "Up"
-table (glm.pred , Direction.2005)
-mean (glm.pred == Direction.2005)
 
-install.packages("pROC")
+glm.pred[glm.probs > .5] <- "Up"
+
+table(glm.pred , Direction.2005) # Tavola di contingenza
+# glm.pred Down  Up
+#     Down   35  35
+#     Up     76 106
+
+mean(glm.pred == Direction.2005) # Accuracy
+# 0.56
+
+# Adattando un modello con meno variabili ai dati di test otteniamo
+# delle performance di accuratezza più elevate
+
+###############
+## ROC CURVE ##
+###############
+# install.packages("pROC")
 library(pROC)
 
+# Attraverso la funzione roc() contenuta all'interno del pacchetto
+# pROC alla quale vengono passati come parametri la variabile di
+# risposta Direction.2005, contenente i valori osservati di test,
+# il vettore delle previsioni già codificate con gli stessi livelli
+# di Direction.2005, plot = T per specificare di restituire il grafico
+# print.auc per stampare il valore dell'area sotto la curva all'interno
+# del grafico e infine settare come colore della curva il blu.
+# Si ottiene, dunque, il relativo grafico in cui viene mostrato
+# sull'asse delle ascisse la specificità e sull'asse delle
+# ordinate la sensitività
+?roc
+par(mfrow=c(1,1))
 roc(Direction.2005, glm.probs, plot=T, print.auc=T, col = "blue")
-predict (glm.fits, newdata = data.frame (Lag1 = c(1.2, 1.5), Lag2 = c(1.1, -0.8)), type = "response")
-
