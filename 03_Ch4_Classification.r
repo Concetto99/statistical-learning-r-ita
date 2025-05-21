@@ -582,6 +582,86 @@ roc(Direction.2005, qda.pred$posterior[,2], plot=T, print.auc=T, col = "magenta"
 ####### Naive Bayes #######
 ###########################
 
+# Carichiamo il pacchetto 'e1071' che contiene la funzione naiveBayes()
+library(e1071)
+
+# Adattiamo un modello Naive Bayes ai dati di training (Smarket[train, ])
+# in cui la variabile di risposta è 'Direction' e i predittori sono 'Lag1'
+# e 'Lag2'. L'oggetto nb.fit conterrà i parametri stimati del modello.
+nb.fit <- naiveBayes(Direction ~ Lag1 + Lag2 , data = Smarket , subset = train)
+
+# Stampiamo l'oggetto nb.fit per visualizzare:
+# - Le probabilità a priori delle classi (Down/Up)
+# - Le medie e deviazioni standard dei predittori condizionate alla classe
+# (assumendo normalità)
+nb.fit
+
+# Call:
+# naiveBayes.default(x = X, y = Y, laplace = laplace)
+# 
+# A-priori probabilities:
+# Y
+#     Down       Up
+# 0.491984 0.508016
+# 
+# Conditional probabilities:
+#       Lag1
+# Y             [,1]     [,2]
+#   Down  0.04279022 1.227446
+#   Up   -0.03954635 1.231668
+# 
+#       Lag2
+# Y             [,1]     [,2]
+#   Down  0.03389409 1.239191
+#   Up   -0.03132544 1.220765
+
+# Output:
+# - "A-priori probabilities": proporzioni delle classi nel training set
+# - "Conditional probabilities": per ciascuna classe, media ([,1]) e
+# deviazione standard ([,2]) di ogni predittore (Lag1 e Lag2), ipotizzando
+# distribuzione normale.
+
+# Verifichiamo che la media condizionata di Lag1 per la classe 'Down' coincida
+# con quella nel modello
+mean(Lag1[train][Direction[train] == "Down"])  # dovrebbe essere ≈ 0.04279
+
+# Verifichiamo anche la deviazione standard stimata di Lag1 per la classe 'Down'
+sd(Lag1[train][Direction[train] == "Down"])     # dovrebbe essere ≈ 1.227
+
+# Usiamo il modello Naive Bayes per predire la direzione di mercato
+# (Smarket.2005), 'nb.class' conterrà le classi previste ('Up' o 'Down')
+# per ciascuna osservazione
+nb.class <- predict(nb.fit , Smarket.2005)
+nb.class[1:5]
+
+# Confrontiamo le classi previste con quelle osservate (Direction.2005)
+# tramite una tabella di contingenza
+table(nb.class, Direction.2005)
+
+# Calcoliamo la proporzione di previsioni corrette, cioè l'accuratezza del
+# modello sul test set
+mean(nb.class == Direction.2005)
+
+# Possiamo anche richiedere le probabilità predette per ciascuna classe
+# (anziché solo la classe più probabile)
+# Impostando type = "raw", otteniamo una matrice con le probabilità a
+# posteriori per ciascuna osservazione
+nb.preds <- predict(nb.fit, Smarket.2005, type = "raw")
+nb.preds[1:5, ]  # Mostriamo le probabilità delle prime 5 osservazioni
+
+# Attraverso la funzione roc() contenuta all'interno del pacchetto
+# pROC alla quale vengono passati come parametri la variabile di
+# risposta Direction.2005, contenente i valori osservati di test,
+# il vettore delle probabilità a posteriori lda.pred$posterior[,2]
+# contenente le probabilità a posteriori per la classe "Up",
+# plot = T per specificare di restituire il grafico.
+# print.auc per stampare il valore dell'area sotto la curva all'interno
+# del grafico e infine settare come colore della curva il verde
+# Si ottiene, dunque, il relativo grafico in cui viene mostrato
+# sull'asse delle ascisse la specificità e sull'asse delle
+# ordinate la sensitività
+roc(Direction.2005, nb.preds[,2], plot=T, print.auc=T, col = "green")
+
 
 ###################################
 ####### K-Nearest Neighbors #######
