@@ -310,6 +310,15 @@ roc(Direction.2005, glm.probs, plot=T, print.auc=T, col = "blue")
 ####### Linear Discriminant Analysis (LDA) #######
 ##################################################
 
+# L'analisi discriminante lineare (LDA) è una tecnica di apprendimento
+# statistico supervisionato utilizzata per la classificazione.
+# Permette di assegnare una nuova osservazione a una classe, date
+# le sue caratteristiche.
+# Per fare ciò si utilizza una funzione discriminante lineare, calcolata
+# per ciascuna classe, che tiene conto delle probabilità a priori
+# e delle densità di probabilità nella k-esima classe. L'osservazione
+# viene assegnata alla classe per cui tale funzione assume il valore massimo.
+
 library(MASS) # Carichiamo il pacchetto MASS
 
 # Assegniamo all'oggetto lda.fit l'output della funzione lda() contenuta
@@ -346,55 +355,123 @@ names(lda.fit) # Per vedere cosa contiene
 # Lag1 -0.6420190
 # Lag2 -0.5135293
 
-# L'output stampato contiene le seguenti informazioni:
-# - La chiamata alla funzione
-# - Le probabilità a priori: 
-# - Le medie di gruppo: 
-# - Coefficienti dei discriminanti lineari:
+# L'output mostra:
+# - La chiamata alla funzione;
+# - Le probabilità a priori di ciascuna classe, stimate dai dati di training;
+# - Le medie delle variabili predittive per ciascuna classe ('Down' e 'Up');
+# - I coefficienti della funzione discriminante lineare (LD1).
 
-# LD1 è possibile scriverlo nel seguente modo:
-#   LD1 = - 0.64 * Lag1 - 0.51 * Lag2
+# La funzione discriminante LD1 può essere scritta esplicitamente come:
+#   LD1 = -0.64 * Lag1 - 0.51 * Lag2
 
-#
-plot (lda.fit)
+# Il plot() di un oggetto lda crea una rappresentazione
+# grafica delle funzioni discriminanti lineari, cioè delle nuove variabili
+# (combinazioni lineari dei predittori) che LDA utilizza per discriminare
+# tra le classi.
+?plot.lda
+plot(lda.fit)
 
-#
-lda.pred <- predict(lda.fit , Smarket.2005)
+# Se le due curve (Down/Up) sono ben separate, allora LDA ha trovato una buona
+# direzione discriminante.
+# Se invece si sovrappongono molto, come in questo caso, significa che i
+# predittori Lag1 e Lag2 non sono sufficienti a discriminare bene le due classi.
 
-#
+# Assegniamo all'oggetto lda.pred l'output della funzione predict()
+# attraverso la quale otteniamo delle previsioni per le osservazioni
+# contenute nel dataset Smarket.2005 utilizzando l'output dell'analisi
+# discriminante lineare ottenuto utilizzando i dati di train precedentemente
+lda.pred <- predict(lda.fit, Smarket.2005)
+
+# la funzione names() ci restituisce i nomi degli argomenti contenuti
+# nell'oggetto lda.pred
 names(lda.pred)
 
-#
+# l'argomento class di lda.pred contiene le classi predette per ogni
+# osservazione del dataset di test. Stampiamo solo i primi 10 elementi
+lda.pred$class[1:10]
+
+# l'argomento posterior di lda.pred contiene le probabilità a posteriori
+# di ogni osservazione per ogni classe. stampiamo solo le prime 10 righe
+# e tutte le colonne
+lda.pred$posterior[1:10,]
+
+# l'argomento x di lda.pred contiene i valori di LD1 ottenuti utilizzando
+# i coefficienti delle discriminanti lineari, le variabili Lag1 e Lag2 sono
+# centrate, quindi viene sottratta la loro media di gruppo
+lda.pred$x[1:10]
+#  0.08293096  0.59114102  1.16723063  0.83335022 -0.03792892 -0.08743142
+# -0.14512719  0.21701324  0.05873792  0.35068642
+
+# Il primo valore lda.pred$x[1] sarà:
+-0.6420190 * (Smarket.2005[1,c("Lag1")] - mean(Smarket[train,c("Lag1")])) -0.5135293 * (Smarket.2005[1,c("Lag2")] - mean(Smarket[train,c("Lag2")]))
+# 0.08293095
+
+# Assegniamo all'oggetto lda.class il vettore contenente le previsioni
+# di classe per ogni osservazione del dataset di test
 lda.class <- lda.pred$class
 
-#
-table (lda.class, Direction.2005)
+# Attraverso il comando table() otteniamo una tabella di contingenza
+# attraverso la quale possiamo vedere le osservazioni predette correttamente
+# e quante di queste invece sono state misclassificate
+table(lda.class, Direction.2005)
+# lda.class Down  Up
+#      Down   35  35
+#      Up     76 106
 
-#
-mean (lda.class == Direction .2005)
+# Accuracy
+mean(lda.class == Direction.2005)
+# oppure
+(35+106)/(35+106+35+76)
 
-#
-sum (lda.pred$posterior[, 1] >= .5)
+# attraverso il comando sum() applicato ad vettore booleano che assume
+# valore TRUE se l'elemento della prima colonna di posterior è > o =
+# alla soglia di 0.5, FALSE altrimenti, otteniamo la somma di tutti
+# gli elementi che rispettano la condizione appena citata
+sum(lda.pred$posterior[, 1] >= .5)
+# 70
 
-#
-sum (lda.pred$posterior[, 1] < .5)
+# attraverso il comando sum() applicato ad vettore booleano che assume
+# valore TRUE se l'elemento della prima colonna di posterior è <
+# della soglia di 0.5, FALSE altrimenti, otteniamo la somma di tutti
+# gli elementi che rispettano la condizione appena citata
+sum(lda.pred$posterior[, 1] < .5)
+# 182
 
-#
+# otteniamo in output le prime 20 righe della prima colonna di posterior
 lda.pred$posterior[1:20, 1]
 
-#
+# otteniamo in output i primi 20 elementi di lda.class
 lda.class[1:20]
 
-#
-sum (lda.pred$posterior[, 1] > .9)
-
+# attraverso il comando sum() applicato ad vettore booleano che assume
+# valore TRUE se l'elemento della prima colonna di posterior è >
+# della soglia di 0.9, FALSE altrimenti, otteniamo la somma di tutti
+# gli elementi che rispettano la condizione appena citata
+sum(lda.pred$posterior[, 1] > .9)
+# 0
 
 ###############
 ## ROC CURVE ##
 ###############
 
-#
+# Attraverso la funzione roc() contenuta all'interno del pacchetto
+# pROC alla quale vengono passati come parametri la variabile di
+# risposta Direction.2005, contenente i valori osservati di test,
+# il vettore delle probabilità a posteriori lda.pred$posterior[,1]
+# contenente le probabilità a posteriori per la classe "Down",
+# plot = T per specificare di restituire il grafico.
+# Si ottiene, dunque, il relativo grafico in cui viene mostrato
+# sull'asse delle ascisse la specificità e sull'asse delle
+# ordinate la sensitività
 roc(Direction.2005, lda.pred$posterior[,1], plot=T)
+
+#  direction: controls > cases
+# 
+# Call:
+# roc.default(response = Direction.2005, predictor = lda.pred$posterior[,     1], plot = T)
+# 
+# Data: lda.pred$posterior[, 1] in 111 controls (Direction.2005 Down) > 141 cases (Direction.2005 Up).
+# Area under the curve: 0.5584
 
 
 
