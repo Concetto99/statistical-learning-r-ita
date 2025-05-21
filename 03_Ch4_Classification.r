@@ -474,7 +474,115 @@ roc(Direction.2005, lda.pred$posterior[,1], plot=T)
 # Area under the curve: 0.5584
 
 
-
 #####################################################
 ####### Quadratic Discriminant Analysis (QDA) #######
 #####################################################
+
+# QDA (Quadratic Discriminant Analysis) è una tecnica di apprendimento
+# supervisionato utilizzata per la classificazione. A differenza di LDA,
+# che assume che le classi condividano una matrice di covarianza comune,
+# QDA permette che ogni classe abbia la propria matrice di covarianza.
+# Questo rende la funzione discriminante quadratica nei predittori.
+# Di conseguenza, QDA è più flessibile di LDA, ma può richiedere più
+# dati per stimare accuratamente i parametri.
+
+# Si adatta un modello di analisi discriminante quadratica per mezzo della
+# funzione qda() contenuta all'interno del pacchetto MASS.
+# Il modello viene stimato utilizzando un sottoinsieme del dataset Smarket,
+# in particolare le osservazioni in cui il vettore booleano 'train' assume
+# valore TRUE.
+# La variabile di risposta è 'Direction', mentre le variabili predittive
+# sono 'Lag1' e 'Lag2'.
+qda.fit <- qda(Direction ~ Lag1 + Lag2 , data = Smarket , subset = train)
+
+# Stampa dell'oggetto qda.fit che contiene le informazioni del modello stimato
+qda.fit
+
+# Call:
+# qda(Direction ~ Lag1 + Lag2, data = Smarket, subset = train)
+# 
+# Prior probabilities of groups:
+#     Down       Up
+# 0.491984 0.508016
+# 
+# Group means:
+#             Lag1        Lag2
+# Down  0.04279022  0.03389409
+# Up   -0.03954635 -0.03132544
+
+# L'output mostra:
+# - La chiamata alla funzione utilizzata per stimare il modello
+# - Le probabilità a priori dei gruppi: rappresentano la proporzione
+# di osservazioni nel training set appartenenti a ciascuna classe (Down e Up)
+# - Le medie condizionate di gruppo: rappresentano la media dei
+# predittori (Lag1 e Lag2) all'interno di ciascuna classe (Down e Up).
+# Questi valori vengono usati per stimare la densità normale multivariata
+# per ciascun gruppo.
+
+# Applichiamo il modello QDA stimato precedentemente (qda.fit) al sottoinsieme
+# di dati contenuto in 'Smarket.2005', al fine di ottenere
+# le previsioni per ciascuna osservazione. La funzione predict() restituisce
+# un oggetto che include la classe predetta, le probabilità posteriori e i
+# valori discriminanti.
+qda.pred <- predict(qda.fit, Smarket.2005)
+
+# Assegniamo all'oggetto qda.class il risultato della predizione (qda.pred)
+# il vettore delle classi previste per ciascuna osservazione del dataset
+# 'Smarket.2005'.
+# Questo indica per ogni osservazione se il modello prevede 'Up' o 'Down'.
+qda.class <- predict(qda.fit , Smarket.2005)$class
+qda.class[1:10]  # Visualizziamo le prime 10 classi previste
+
+# Assegniamo all'oggetto qda.posterior il risultato della predizione delle
+# probabilità a posteriori per ciascuna classe.
+# Ogni riga della matrice rappresenta un'osservazione e ogni colonna la
+# probabilità stimata che l'osservazione appartenga a ciascuna delle classi,
+# date le sue caratteristiche.
+# Queste probabilità sono calcolate utilizzando la formula di Bayes.
+qda.posterior <- predict(qda.fit , Smarket.2005)$posterior
+qda.posterior[1:10,]  # Visualizziamo le prime 10 righe delle probabilità a posteriori
+
+
+# tabella di contingenza
+table(qda.class , Direction.2005)
+
+#          Direction.2005
+# qda.class Down  Up
+#      Down   30  20
+#      Up     81 121
+
+# Accuracy
+mean(qda.class == Direction.2005)
+
+# Attraverso la funzione roc() contenuta all'interno del pacchetto
+# pROC alla quale vengono passati come parametri la variabile di
+# risposta Direction.2005, contenente i valori osservati di test,
+# il vettore delle probabilità a posteriori lda.pred$posterior[,2]
+# contenente le probabilità a posteriori per la classe "Up",
+# plot = T per specificare di restituire il grafico.
+# print.auc per stampare il valore dell'area sotto la curva all'interno
+# del grafico e infine settare come colore della curva il magenta
+# Si ottiene, dunque, il relativo grafico in cui viene mostrato
+# sull'asse delle ascisse la specificità e sull'asse delle
+# ordinate la sensitività
+roc(Direction.2005, qda.pred$posterior[,2], plot=T, print.auc=T, col = "magenta")
+
+# Setting levels: control = Down, case = Up
+# Setting direction: controls < cases
+# 
+# Call:
+# roc.default(response = Direction.2005, predictor = qda.pred$posterior[,     2], plot = T, print.auc = T, col = "magenta")
+# 
+# Data: qda.pred$posterior[, 2] in 111 controls (Direction.2005 Down) < 141 cases (Direction.2005 Up).
+# Area under the curve: 0.562
+
+
+
+###########################
+####### Naive Bayes #######
+###########################
+
+
+###################################
+####### K-Nearest Neighbors #######
+###################################
