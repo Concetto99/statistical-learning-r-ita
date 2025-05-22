@@ -666,3 +666,127 @@ roc(Direction.2005, nb.preds[,2], plot=T, print.auc=T, col = "green")
 ###################################
 ####### K-Nearest Neighbors #######
 ###################################
+
+########################################################
+# Esempio (1) con gli stessi dati usati in precedenza ##
+########################################################
+
+#
+library(class)
+
+#
+train.X <- cbind (Lag1 , Lag2)[train , ]
+train.X
+
+#
+test.X <- cbind(Lag1 , Lag2)[!train , ]
+test.X
+
+#
+train.Direction <- Direction[train]
+
+#
+set.seed(1)
+
+?knn
+#
+knn.pred <- knn(train.X, test.X, train.Direction , k = 1, prob = TRUE)
+
+#
+knn.pred <- knn(train.X, test.X, train.Direction , k = 3,  prob = TRUE)
+knn.pred
+
+#
+names(knn.pred)
+
+#
+table(knn.pred , Direction.2005)
+
+#
+mean(knn.pred == Direction.2005)
+
+#install.packages("pROC")
+
+#
+roc(Direction.2005, attributes(knn.pred)$prob, plot=T, print.auc=T, col = "black")
+
+################################################
+## Esempio (2) con i dati del dataset Caravan ##
+################################################
+
+#
+summary(Caravan)
+
+#
+dim(Caravan)
+
+#
+attach(Caravan)
+
+#
+summary(Purchase)
+
+standardized.X <- scale (Caravan[, -86])
+
+var(Caravan[, 1])
+var(Caravan[, 2])
+
+
+var(standardized.X[, 1])
+var(standardized.X[, 2])
+
+test <- 1:1000
+
+train.X <- standardized.X[-test , ]
+train.X
+
+test.X <- standardized.X[test , ]
+test.X
+
+train.Y <- Purchase[-test]
+
+test.Y <- Purchase[test]
+
+set.seed (1)
+
+knn.pred <- knn (train.X, test.X, train.Y, k = 1)
+mean (test.Y != knn.pred)
+
+mean (test.Y != "No")
+
+table(test.Y)
+table(train.Y)
+
+table(knn.pred , test.Y)
+
+9 / (68 + 9)
+
+knn.pred <- knn(train.X, test.X, train.Y, k = 3)
+table(knn.pred , test.Y)
+knn.pred <- knn(train.X, test.X, train.Y, k = 5)
+table(knn.pred , test.Y)
+
+
+###############################################
+## Confronto tra Logistica e KNN per Caravan ##
+###############################################
+
+
+
+####################################################
+## Confronto tra curve ROC per il dataset Smarket ##
+####################################################
+
+#
+?roc
+roc.logistica <- roc(Direction.2005, glm.probs, plot=T, print.auc=T, col = "blue")
+roc.lda <- roc(Direction.2005, lda.pred$posterior[,1], plot=T, print.auc=T, col = "yellow")
+roc.qda <- roc(Direction.2005, qda.pred$posterior[,2], plot=T, print.auc=T, col = "magenta")
+roc.nb <- roc(Direction.2005, nb.preds[,2], plot=T, print.auc=T, col = "green")
+roc.knn <- roc(Direction.2005, attributes(knn.pred)$prob, plot=T, print.auc=T, col = "black")
+
+#
+lista.roc <- list(roc.logistica, roc.lda, roc.qda, roc.nb, roc.knn)
+
+library(ggplot2)
+ggroc(lista.roc) + labs(color='Method')
