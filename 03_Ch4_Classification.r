@@ -671,113 +671,342 @@ roc(Direction.2005, nb.preds[,2], plot=T, print.auc=T, col = "green")
 # Esempio (1) con gli stessi dati usati in precedenza ##
 ########################################################
 
-#
+# Attraverso il comando library carico il pacchetto "class"
 library(class)
 
-#
-train.X <- cbind (Lag1 , Lag2)[train , ]
-train.X
+# Si assegna all'oggetto train.X la matrice avente come colonne
+# Lag1 e Lag2 contenute nel dataframe Smarket, in cui righe sono
+# selezionate e coincidono con gli indici per cui il vettore train
+# ha come elemento TRUE. Il comando cbind() ci permette di affiancare
+# i due vettori Lag1 e Lag2 per colonna
+train.X <- cbind(Lag1, Lag2)[train, ]
+class(train.X)
+train.X[1:10,]
 
-#
+# Si assegna all'oggetto test.X la matrice avente come colonne
+# Lag1 e Lag2 contenute nel dataframe Smarket, in cui righe sono
+# selezionate e coincidono con gli indici per cui la negazione del
+# vettore train ha come elemento TRUE, ovvero dove train è FALSE.
+# Il comando cbind() ci permette di affiancare i due vettori Lag1
+# e Lag2 per colonna
 test.X <- cbind(Lag1 , Lag2)[!train , ]
-test.X
+test.X[1:10,]
 
-#
+# Si assegna all'oggetto train.Direction in vettore contenente gli
+# elementi del vettore Direction di Smarket selezionati in modo tale
+# da estrarre solamente gli indici per i quali il vettore booleano train
+# ha come elemento TRUE
 train.Direction <- Direction[train]
 
-#
+# Attraverso il comando set.seed() si definisce un seme utile alla
+# riproducibilità dei risultati, in questo caso perchè utilizziamo
+# la funzione knn() in seguito che potrebbe avere dei vicini più
+# vicini equidistanti e sceglierne dunque uno dei due
 set.seed(1)
 
 ?knn
-#
-knn.pred <- knn(train.X, test.X, train.Direction , k = 1, prob = TRUE)
+# Si assegna all'oggetto knn.pred l'output della funzione knn(),
+# contenuta nel pacchetto 'class', che implementa il metodo
+# k-Nearest Neighbors.
+# Come parametri passiamo:
+# - train.X: matrice (o data frame) delle variabili predittive del set di training (Lag1 e Lag2)
+# - test.X: matrice delle variabili predittive del set di test
+# - train.Direction: fattore contenente le etichette di classe ("Up" o "Down") del training set
+# - k = 1: indica che si considera 1 solo vicino più vicino per la classificazione
+# - prob = TRUE: specifica che si vogliono ottenere anche le probabilità a posteriori
+#   (ossia, la proporzione di voti per la classe assegnata — che sarà sempre 1 quando k = 1)
+knn.pred <- knn(train.X, test.X, train.Direction, k = 1, prob = TRUE)
 
-#
-knn.pred <- knn(train.X, test.X, train.Direction , k = 3,  prob = TRUE)
+# Si assegna all'oggetto knn.pred l'output della funzione knn(),
+# contenuta nel pacchetto 'class', che implementa il metodo
+# k-Nearest Neighbors.
+# Come parametri passiamo:
+# - train.X: matrice (o data frame) delle variabili predittive del set di training (Lag1 e Lag2)
+# - test.X: matrice delle variabili predittive del set di test
+# - train.Direction: fattore contenente le etichette di classe ("Up" o "Down") del training set
+# - k = 1: indica che si considera 3 vicini più vicini per la classificazione
+# - prob = TRUE: specifica che si vogliono ottenere anche le probabilità a posteriori
+#   (ossia, la proporzione di voti per la classe assegnata)
+knn.pred <- knn(train.X, test.X, train.Direction, k = 3,  prob = TRUE)
 knn.pred
 
-#
-names(knn.pred)
-
-#
+# Tabella di contingenza
 table(knn.pred , Direction.2005)
 
-#
+# il seguente comando ci restituisce il numero totale dei casi per cui
+# la condizione logica knn.pred == Direction.2005 è verificata sul
+# totale (dimensione dei vettori)
 mean(knn.pred == Direction.2005)
+# Circa il 53% dei valori è uguale, mentre il 47% non lo è. Questo numero ci
+# da un'indicazione su quanto il modello è in grado di predire correttamente
+# la classe ad ogni osservazione
 
-#install.packages("pROC")
-
-#
+# Attraverso la funzione roc() contenuta all'interno del pacchetto
+# pROC alla quale vengono passati come parametri la variabile di
+# risposta Direction.2005, contenente i valori osservati di test,
+# il vettore delle probabilità a posteriori attributes(knn.pred)$prob
+# contenente le probabilità a posteriori per la classe "Up",
+# plot = T per specificare di restituire il grafico.
+# print.auc per stampare il valore dell'area sotto la curva all'interno
+# del grafico e infine settare come colore della curva il nero
+# Si ottiene, dunque, il relativo grafico in cui viene mostrato
+# sull'asse delle ascisse la specificità e sull'asse delle
+# ordinate la sensitività
 roc(Direction.2005, attributes(knn.pred)$prob, plot=T, print.auc=T, col = "black")
 
 ################################################
 ## Esempio (2) con i dati del dataset Caravan ##
 ################################################
 
-#
+# Il comando summary() applicato ad un oggetto di tipo data frame ci restituisce
+# min, max, 1,2,3 quartile e media se la delle variabili quantitative o le
+# frequenze di classe per le variabili qualitative
 summary(Caravan)
 
-#
+# il comando dim() restituisce le dimensioni [n. righe, n. colonne] del dataset
+# Caravan
 dim(Caravan)
 
-#
+# Assegniamo le variabili del data frame come oggetti accessibili sul nostro
+# Environment
 attach(Caravan)
 
-#
+# Il comando summary() applicato ad una variabile qualitativa ci restituisce
+# le frequenze assolute per le classi di Purchase
 summary(Purchase)
 
-standardized.X <- scale (Caravan[, -86])
+# Assegniamo all'oggetto standardized.X la matrice dei dati contenente tutte
+# le righe di Caravan e tutte le colonne standardizzate, eccetto la 86esima
+standardized.X <- scale(Caravan[, -86])
+class(standardized.X) # "matrix" "array"
 
+# Attraverso il comando var() applicato al vettore contente tutte le righe
+# e la prima colonna di Caravan riportiamo in output la varianza della prima
+# colonna di Carvan
 var(Caravan[, 1])
+
+# Attraverso il comando var() applicato al vettore contente tutte le righe
+# e la seconda colonna di Caravan riportiamo in output la varianza della seconda
+# colonna di Carvan
 var(Caravan[, 2])
 
-
+# Attraverso il comando var() applicato al vettore contente tutte le righe
+# e la prima colonna di Caravan riportiamo in output la varianza della prima
+# colonna di standardized.X
+# Essendo una variabile standardizzata è a media pari a zero e deviazione
+# standard pari a 1
 var(standardized.X[, 1])
+
+# Attraverso il comando var() applicato al vettore contente tutte le righe
+# e la seconda colonna di Caravan riportiamo in output la varianza della seconda
+# colonna di standardized.X
+# Essendo una variabile standardizzata è a media pari a zero e deviazione
+# standard pari a 1
 var(standardized.X[, 2])
 
+# Si assegna all'oggetto test, il vettore contenente i numeri interi da 1 a 1000
 test <- 1:1000
 
-train.X <- standardized.X[-test , ]
-train.X
+# Si assegna all'oggetto train.X la matrice contenente tutte le righe eccetto le
+# prime 1000 e tutte le colonne di standardized.X
+train.X <- standardized.X[-test, ]
+train.X[1:10,]
 
-test.X <- standardized.X[test , ]
-test.X
+# Si assegna all'oggetto test.X la matrice contenente le prime 1000 righe
+# e tutte le colonne di standardized.X
+test.X <- standardized.X[test, ]
+test.X[1:10,]
 
+# Si assegna all'oggetto train.Y il vettore contenente tutti gli elementi
+# eccetto i primi 1000 della variabile Purchase
 train.Y <- Purchase[-test]
 
+# Si assegna all'oggetto test.Y il vettore contenente i primi 1000 elementi
+# della variabile Purchase
 test.Y <- Purchase[test]
 
-set.seed (1)
+# Attraverso il comando set.seed() si definisce un seme utile alla
+# riproducibilità dei risultati, in questo caso perchè utilizziamo
+# la funzione knn() in seguito che potrebbe avere dei vicini più
+# vicini equidistanti e sceglierne dunque uno dei due
+set.seed(1)
 
-knn.pred <- knn (train.X, test.X, train.Y, k = 1)
-mean (test.Y != knn.pred)
+?knn
+# Si assegna all'oggetto knn.predCaravan l'output della funzione knn(),
+# contenuta nel pacchetto 'class', che implementa il metodo
+# k-Nearest Neighbors.
+# Come parametri passiamo:
+# - train.X: matrice (o data frame) delle variabili predittive del set di training
+# - test.X: matrice delle variabili predittive del set di test
+# - train.Y: fattore contenente le etichette di classe ("Yes" o "No") del training set
+# - k = 1: indica che si considera 1 solo vicino più vicino per la classificazione
+knn.predCaravan <- knn(train.X, test.X, train.Y, k = 1)
 
-mean (test.Y != "No")
+# il seguente comando ci restituisce il numero totale dei casi per cui
+# la condizione logica test.Y != knn.pred è verificata sul
+# totale (dimensione dei vettori)
+mean(test.Y != knn.pred)
+# Questo valore ci da un'indicazione di quanto sbaglia il classificatore,
+# o anche definito come misclassification rate
+# In questo caso vediamo che il classificatore sbaglia nel prevedere la
+# variabile Purchase per le nuove osservazioni del set di test circa il
+# 12% delle volte
 
+# il seguente comando ci restituisce il numero totale di volte in cui
+# gli elementi all'interno dell'oggetto test.Y sono diversi dalla stringa
+# "No" sul totale degli elementi
+mean(test.Y != "No")
+test.Y[1:20]
+# circa il 6% degli elementi in test.Y sono diversi da "No"
+
+# Attraverso il comando table() applicato ad una variabile qualitativa
+# ci restituisce le frequenze assolute di test.Y
 table(test.Y)
+#  No Yes
+# 941  59
+
+59 / (941 + 59) # 0.059
+
+# Attraverso il comando table() applicato ad una variabile qualitativa
+# ci restituisce le frequenze assolute di test.Y
 table(train.Y)
+#   No  Yes
+# 4533  289
 
-table(knn.pred , test.Y)
+# Tabella di contingenza
+table(knn.predCaravan, test.Y)
+#         test.Y
+# knn.pred  No Yes
+#      No  873  50
+#      Yes  68   9
 
-9 / (68 + 9)
+# La classe Purchase=Yes viene predetta correttamente per le nuove osservazioni
+# usando il classificatore KNN con K=1 solo l'11% delle volte, circa l'89% delle
+# volte viene misclassificata
+9 / (68 + 9) # 0.1168831
 
-knn.pred <- knn(train.X, test.X, train.Y, k = 3)
-table(knn.pred , test.Y)
-knn.pred <- knn(train.X, test.X, train.Y, k = 5)
-table(knn.pred , test.Y)
+# Si assegna all'oggetto knn.predCaravan l'output della funzione knn(),
+# contenuta nel pacchetto 'class', che implementa il metodo
+# k-Nearest Neighbors.
+# Come parametri passiamo:
+# - train.X: matrice (o data frame) delle variabili predittive del set di training
+# - test.X: matrice delle variabili predittive del set di test
+# - train.Y: fattore contenente le etichette di classe ("Yes" o "No") del training set
+# - k = 1: indica che si considera 3 vicini più vicini per la classificazione
+knn.predCaravan <- knn(train.X, test.X, train.Y, k = 3)
+
+# Tabella di contingenza
+table(knn.predCaravan, test.Y)
+#         test.Y
+# knn.pred  No Yes
+#      No  920  54
+#      Yes  21   5
+
+# Si assegna all'oggetto knn.predCaravan l'output della funzione knn(),
+# contenuta nel pacchetto 'class', che implementa il metodo
+# k-Nearest Neighbors.
+# Come parametri passiamo:
+# - train.X: matrice (o data frame) delle variabili predittive del set di training
+# - test.X: matrice delle variabili predittive del set di test
+# - train.Y: fattore contenente le etichette di classe ("Yes" o "No") del training set
+# - k = 1: indica che si considera 5 vicini più vicini per la classificazione
+knn.predCaravan <- knn(train.X, test.X, train.Y, k = 5)
+
+# Tabella di contingenza
+table(knn.predCaravan, test.Y)
+#         test.Y
+# knn.pred  No Yes
+#      No  930  55
+#      Yes  11   4
+
 
 
 ###############################################
 ## Confronto tra Logistica e KNN per Caravan ##
 ###############################################
 
+# Attraverso la funzione glm() adattiamo un modello lineare generalizzato ai
+# dati utilizzando come variabile di risposta Purchase e come variabili
+# indipendenti tutte le altre colonne contenute nel dataset Caravan, per
+# il training del modello si considerano quindi tutte le righe eccetto le
+# prime 1000 (subset = -test)
+# Attraverso l'argomento family = binomial è possibile esplicitare la natura
+# binaria della variabile risposta (Purchase assume due modalità: ad esempio
+# "Yes" e "No"), indicando che desideriamo stimare un modello di regressione
+# logistica.
+# Dunque, si tratta di un modello logit, in cui si stima la probabilità che la
+# risposta assuma una determinata modalità (es. "Up") in funzione delle
+# variabili esplicative, tramite la funzione di collegamento logit
+# L'output del modello viene salvato nell’oggetto glm.fits, che contiene tutte
+# le informazioni utili per l’analisi
+attach(Caravan)
+glm.fitsCaravan <- glm(Purchase ~ ., data = Caravan, family = binomial, subset = -test)
+
+# Si assegna all'oggetto glm.probsCaravan il vettore delle probabilità a posteriori
+# ottenute utilizzando la funzione predict attraverso la quale adattiamo il
+# modello contenuto in glm.fitsCaravan ai nuovi dati Caravan[test, ]e con type =
+# response viene restituita la probabilità che quell'osservazione appartenga
+# alla classe categorizzata con 1 date le sue caratteristiche
+glm.probsCaravan <- predict(glm.fitsCaravan, Caravan[test, ], type = "response")
+class(glm.probs)
+
+# Si assegna all'oggetto glm.predCaravan un vettore di lunghezza 1000 avente come
+# elementi la stringa "No" ripetuta 1000 volte
+glm.predCaravan <- rep("No", 1000)
+
+
+# Updatiamo il vettore glm.predCaravan assegniando la stringa "Yes" per tutti quegli
+# elementi per cui nel medesimo indice in glm.probs è presente un valore
+# maggiore di 0.5
+glm.predCaravan[glm.probsCaravan > .5] <- "Yes"
+
+# Tabella di contingenza
+table(glm.predCaravan , test.Y)
+#         test.Y
+# glm.pred  No Yes
+#      No  934  59
+#      Yes   7   0
+
+# Si assegna all'oggetto glm.predCaravan un vettore di lunghezza 1000 avente come
+# elementi la stringa "No" ripetuta 1000 volte
+glm.predCaravan <- rep("No", 1000)
+
+# Updatiamo il vettore glm.predCaravan assegniando la stringa "Yes" per tutti quegli
+# elementi per cui nel medesimo indice in glm.probs è presente un valore
+# maggiore di 0.25 (abbassiamo la soglia)
+glm.predCaravan[glm.probsCaravan > .25] <- "Yes"
+
+# tabella di contingenza 
+table(glm.predCaravan , test.Y)
+#         test.Y
+# glm.pred  No Yes
+#      No  934  59
+#      Yes   7   0
+
+# Il risultato non cambia
+
+# Accuracy logistica
+mean(glm.predCaravan == test.Y)
+
+# Accuracy KNN
+mean(test.Y == knn.pred)
+
+# L'accuracy tra KNN e logistica è la stessa, cambia però la
+# "capacità" per la logistica di prevedere la categoria
+# Purchase= "Yes", qualcosa di simile accade anche utilizzando
+# il knn come classificatore ma è meno accentuato
+
+# Questo è un problema principalmente in quanto ci troviamo di
+# fronte ad un dataset sbilanciato
 
 
 ####################################################
 ## Confronto tra curve ROC per il dataset Smarket ##
 ####################################################
 
-#
+# Si creano gli oggetti contenenti l'output per creare il grafico
+# di confronto delle curve ROC tra i vari modelli per il dataset
+# Smarket
 ?roc
 roc.logistica <- roc(Direction.2005, glm.probs, plot=T, print.auc=T, col = "blue")
 roc.lda <- roc(Direction.2005, lda.pred$posterior[,1], plot=T, print.auc=T, col = "yellow")
@@ -785,8 +1014,15 @@ roc.qda <- roc(Direction.2005, qda.pred$posterior[,2], plot=T, print.auc=T, col 
 roc.nb <- roc(Direction.2005, nb.preds[,2], plot=T, print.auc=T, col = "green")
 roc.knn <- roc(Direction.2005, attributes(knn.pred)$prob, plot=T, print.auc=T, col = "black")
 
-#
-lista.roc <- list(roc.logistica, roc.lda, roc.qda, roc.nb, roc.knn)
+# Si assegna all'oggetto lista.roc la lista contenente gli oggetti di classe
+# roc salvati in precedenza
+lista.roc <- list(Logistica=roc.logistica, LDA=roc.lda, QDA=roc.qda, NB=roc.nb, KNN=roc.knn)
 
+# Si carica il pacchetto ggplot2 contenente le principali funzioni
+# per la creazione di visualizzazioni grafiche
 library(ggplot2)
-ggroc(lista.roc) + labs(color='Method')
+
+# Si utilizza la funzione ggroc per creare il grafico contenti le
+# curve ROC per i 5 modelli di classificazione
+?ggroc
+ggroc(lista.roc) + labs(color='Method') + theme(legend.position="bottom") + ggtitle("ROC curve")
