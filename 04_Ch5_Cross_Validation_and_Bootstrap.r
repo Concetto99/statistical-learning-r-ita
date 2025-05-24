@@ -123,17 +123,68 @@ mean((mpg - predict(lm.fit3, Auto))[-train]^2) # 18.79401
 ## LOOCV - Leave One Out CV ##
 ##############################
 
+# Assegniamo all'oggetto glm.fit l'output della funzione glm() attraverso la
+# quale effettuiamo un modello di regressione lineare in cui la variabile di
+# risposta è mpg e la variabile indipendente è horsepower.
+# Di default la funzione glm() ha una family=gaussian, ciò ci permette di
+# effettuare la stessa regressione ottenibile utilizzando la funzione lm()
+?glm
 glm.fit <- glm(mpg ~ horsepower, data = Auto)
+
+# Attraverso il comando coef() applicato ad un oggetto di classe glm otteniamo
+# in output i coefficienti del modello di regressione lineare
 coef(glm.fit)
 
+# Riproduciamo lo stesso output utilizzando lm()
 lm.fit <- lm(mpg ~ horsepower, data = Auto)
 coef(lm.fit)
 
-glm.fit <- glm(mpg ~ horsepower, data = Auto)
-cv.err <- cv.glm(Auto, glm.fit)
-cv.err$delta
+# I comandi utilizzati sopra permettono di effettuare la
+# stessa analisi, ma con l'oggetto lm.fit non è poi possibile
+# utilizzare la funzione cv.glm()
 
+# Definiamo un seme per garantire la riproducibilità dei risultati
+set.seed(123)
+
+# assegniamo all'oggetto cv.err l'output della funzione cv.glm() attraverso
+# la quale calcoliamo il cross-validation prediction error, suddividendo il
+# dataset in k gruppi, stimando il modello per tutte eccetto il k-esimo gruppo
+# e su questo calcolando l'errore di previsione tra i fitted values e le
+# prevsioni ottenute adattando il modello ai dati lasciati fuori.
+# Se non si specifica il parametro k, questo effettuerà una LOOCV dunque
+# lascerà per ogni ciclo una osservazione fuori e su questa calcolerà
+# l'errore di previsione commesso.
+?cv.glm
+cv.err <- cv.glm(Auto, glm.fit)
+
+# Attraverso il comando names() riportiamo in output gli oggetti contenuti
+# all'interno di cv.err, ovvero:
+# - La chiamata alla funzione
+# - Il numero di k gruppi in cui suddividiamo i nostri dati
+# - I valori del cross validation prediction error, nello specifico il primo
+# valore è il cross validation prediction error, mentre il secondo viene
+# aggiustato
+# - infine seed, ovvero il valore dei semi causali quando viene richiamata
+# la funzione cv.glm
+names(cv.err)
+# "call"  "K"     "delta" "seed"
+
+# Non avendo specificato il parametro k questo è 392, ovvero la dimensione
+# del dataset utilizzato
+cv.err$K # 392
+
+# il primo valore è il cross validation prediction error, mentre il
+# secondo viene aggiustato per compensare il bias introdotto se non usiamo
+# leave-one-out cross-validation
+cv.err$delta # 24.23151 24.23114
+
+# semi causali quando viene richiamata la funzione cv.glm
+cv.err$seed
+
+# 
 cv.error <- rep(0, 10)
+
+#
 for (i in 1:10) {
  glm.fit <- glm(mpg ~ poly(horsepower, i), data = Auto)
  cv.error[i] <- cv.glm(Auto, glm.fit)$delta[1]
