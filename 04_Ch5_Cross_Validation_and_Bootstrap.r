@@ -67,45 +67,55 @@ table(sample(20, 5, replace = FALSE))
 # entrambre del dataser Auto, si utilizzano per il modello esclusivamente
 # le righe di mpg e horsepower i cui indici corrispondono ai valori di train
 lm.fit <- lm(mpg ~ horsepower, data = Auto, subset = train)
+horsepower[1:10]
 
 # attraverso il comando Attach rendiamo direttamente accessibili le colonne
 # del dataframe Auto all'interno del global environment
 attach(Auto)
 
-# Attraverso la funzione mean applicata ad un vettore creato on the fly
+# Attraverso la funzione mean applicata ad un vettore creato "on the fly"
 # dove ogni elemento corrisponte alla differenza tra l'i-esimo elemento
-# di mpg e l'i-esimo elemtento del vettore delle previsioni dei dati
+# di mpg e l'i-esimo elemento del vettore delle previsioni dei dati
 # di Auto utilizzando lm.fit al quadrato. Gli elementi, sia di mpg che di
-# predict(lm.fit, Auto), estratti saranno solamente tutti gli elementi
-# dei due vettori eccetto gli indici corrispondenti ai valori di train.
-mean((mpg - predict(lm.fit, Auto))[-train]^2)
+# predict(lm.fit, Auto), selezionati saranno solamente tutti gli elementi
+# dei due vettori eccetto gli indici corrispondenti ai valori contenuti
+# all'interno dell'oggetto train.
+mean((mpg - predict(lm.fit, Auto))[-train]^2) # 23.26601
 # Nella pratica questo valore corrisponde allo scarto quadratico medio
 # tra i valori osservati e i valori previsti di test, o per meglio
 # dire l'MSE di test
 
-#
+# Si assegna all'oggetto lm.fit2 l'output del modello di regressione
+# in cui la variabile dipendente è mpg, e come regressori vengono
+# utilizzati horsepower e horsepower^2 opportunamente trasformate
+# in variabili ortogonali tra loro tramite la funzione poly().
+# Le variabili si trovano all'interno del data frame Auto e vengono
+# selezionate solamente le righe i cui indici corrispondono agli
+# elementi del vettore train.
 lm.fit2 <- lm(mpg ~ poly(horsepower, 2), data = Auto, subset = train)
+poly(horsepower, 2)[1:10,]
 
-#
-mean((mpg - predict(lm.fit2, Auto))[-train]^2)
+# Ricalcoliamo il MSE di test
+mean((mpg - predict(lm.fit2, Auto))[-train]^2) # 18.71646
+# L'aggiunta della trasformazione al quadrato della variabile horsepower
+# ha un effetto di riduzione per l'MSE di test. La variabile mpg può
+# essere spiegata non solo da horsepower ma l'aggiunta della stessa variabile
+# al quadrato può cogliere dell'informazione aggiuntiva rispetto alla
+# compomente lineare
 
-#
-power, 3), data = Auto, subset = train)
-
-#
-mean((mpg - predict(lm.fit3, Auto))[-train]^2)
-
-#
-set.seed(2)
-train <- sample(392, 196)
-lm.fit <- lm(mpg ~ horsepower, subset = train)
-mean((mpg - predict(lm.fit, Auto))[-train]^2)
-
-lm.fit2 <- lm(mpg ~ poly(horsepower, 2), data = Auto, subset = train)
-mean((mpg - predict(lm.fit2, Auto))[-train]^2)
-
+# lm.fit3 rappresenta un modello di regressione polinomiale del terzo grado,
+# dove la variabile di risposta è mpg e la variabile esplicativa è horsepower,
+# trasformata tramite la funzione poly(horsepower, 3), che restituisce tre
+# componenti ortogonali (potenze fino al cubo).
 lm.fit3 <- lm(mpg ~ poly(horsepower, 3), data = Auto, subset = train)
-mean((mpg - predict(lm.fit3, Auto))[-train]^2)
+poly(horsepower, 3)[1:10,]
+
+# Ricalcoliamo il MSE di test
+mean((mpg - predict(lm.fit3, Auto))[-train]^2) # 18.79401
+# L’aggiunta della componente cubica non ha migliorato l’errore rispetto
+# al secondo grado. Anzi, l’MSE è leggermente aumentato, il che ci porta
+# a pensare che l’aggiunta di complessità non porta un guadagno in capacità
+# predittiva, e può addirittura peggiorare la performance per overfitting.
 
 
 
