@@ -181,16 +181,36 @@ cv.err$delta # 24.23151 24.23114
 # semi causali quando viene richiamata la funzione cv.glm
 cv.err$seed
 
-# 
+# Assegniamo all'oggetto cv.error il vettore di lunghezza 10 avente 0
+# come elementi
 cv.error <- rep(0, 10)
+cv.error
 
-#
+# Attraverso un ciclo for per i che va da 1 a 10 eseguiamo le
+# istruzioni seguenti
+# - Assegniamo all'oggetto glm.fit l'output di un modello lineare
+# generalizzato con family = Gaussian (default), che ci permette di
+# effettuare una regressione lineare polinomiale utilizzando il dataframe
+# Auto in cui mpg è la variabile di risposta, mentre come regressori del
+# modello vi sono tutte le variabili dal grado 1 a i per horsepower,
+# ortogonali tra loro.
+# - Updatiamo l'i-esimo elemente del vettore cv.error assegnando il
+# primo elemento del oggetto delta della funzione cv.glm, attraverso la
+# quale effettuiamo una LOOCV utilizzando glm.fit
 for (i in 1:10) {
  glm.fit <- glm(mpg ~ poly(horsepower, i), data = Auto)
  cv.error[i] <- cv.glm(Auto, glm.fit)$delta[1]
 }
-cv.error
 
+cv.error
+# 24.23151 19.24821 19.33498 19.42443 19.03321 18.97864 18.83305 18.96115 19.06863 19.49093
+
+# Come possiamo notare dal grafico la spezzata scende rapidamente
+# quando passiamo dall'ultilizzare horsepower e il polinomio di grado 2
+# mentre vi è un minimo utilizzando un polinomio di grado 7, il prezzo da
+# pagare è però una maggiore flessibilità, dunque perdita in interpretabilità
+plot(cv.error)
+lines(cv.error)
 
 
 
@@ -198,13 +218,47 @@ cv.error
 ## k-Fold Cross Validation ##
 #############################
 
+# Definiamo un seme per garantire la riproducibilità dei risultati
 set.seed(17)
+
+# Assegniamo all'oggetto cv.error il vettore di lunghezza 10 avente 0
+# come elementi
 cv.error.10 <- rep(0, 10)
+
+# Attraverso un ciclo for per i che va da 1 a 10 eseguiamo le
+# istruzioni seguenti
+# - Assegniamo all'oggetto glm.fit l'output di un modello lineare
+# generalizzato con family = Gaussian (default), che ci permette di
+# effettuare una regressione lineare polinomiale utilizzando il dataframe
+# Auto in cui mpg è la variabile di risposta, mentre come regressori del
+# modello vi sono tutte le variabili dal grado 1 a i per horsepower,
+# ortogonali tra loro.
+# - Updatiamo l'i-esimo elemente del vettore cv.error assegnando il
+# primo elemento del oggetto delta della funzione cv.glm, attraverso la
+# quale effettuiamo una 10-Fold Cross-Validation utilizzando glm.fit
 for (i in 1:10) {
  glm.fit <- glm(mpg ~ poly(horsepower, i), data = Auto)
  cv.error.10[i] <- cv.glm(Auto, glm.fit, K = 10)$delta[1]
 }
+
 cv.error.10
+# 24.20629 19.11172 19.23365 19.57416 19.53450 19.10526 18.88978 18.82748 19.07514 19.35349
+
+plot(cv.error.10)
+lines(cv.error.10)
+
+# Confronto LOOCV vs. 10-Fold
+
+# Creo la matrice avente come colonne i due vettore di cv.error e cv.error.10
+cbind(cv.error,cv.error.10)
+
+# Grafico per il confronto
+plot(cbind(1:10, 1:10), cbind(cv.error, cv.error.10))
+lines(cv.error, col="blue")
+lines(cv.error.10, col="red")
+
+# Come possiamo notare le linee seguono lo stesso andamento,
+# con piccole variazioni per i CV predicition error ottenuti
 
 
 
