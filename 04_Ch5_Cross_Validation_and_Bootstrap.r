@@ -266,40 +266,185 @@ lines(cv.error.10, col="red")
 ## Bootstrap ##
 ###############
 
+
+head(Portfolio)
+#            X          Y
+# 1 -0.8952509 -0.2349235
+# 2 -1.5624543 -0.8851760
+# 3 -0.4170899  0.2718880
+# 4  1.0443557 -0.7341975
+# 5 -0.3155684  0.8419834
+# 6 -1.7371238 -2.0371910
+
+summary(Portfolio)
+#       X                  Y
+# Min.   :-2.43276   Min.   :-2.72528
+# 1st Qu.:-0.88847   1st Qu.:-0.88572
+# Median :-0.26889   Median :-0.22871
+# Mean   :-0.07713   Mean   :-0.09694
+# 3rd Qu.: 0.55809   3rd Qu.: 0.80671
+# Max.   : 2.46034   Max.   : 2.56599
+
+# si assegna all'oggetto alpha.fn una funzione avente due parametri,
+# data e index. Una volta richiamata questa eseguirà le seguenti
+# istruzioni:
+# - Assegna all'ogetto X la variabile X del dataset passato come
+# parametro data, selezionando solo gli indici contenuti nel
+# vettore passato come parametro index
+# - Assegna all'ogetto Y la variabile y del dataset passato come
+# parametro data, selezionando solo gli indici contenuti nel
+# vettore passato come parametro index
+# - Riporta in output il risultato del comando
+# (var(Y) - cov(X, Y)) / (var(X) + var(Y) - 2 * cov(X, Y)) attraverso
+# il quale è il rapporto tra la varianza di X meno la covarianza
+# tra X e Y (al numeratore) su la somma della varianza di X, la
+# varianza di Y e 2 volte la covarianza tra X e Y (al denominatore)
 alpha.fn <- function(data, index) {
  X <- data$X[index]
  Y <- data$Y[index]
  (var(Y) - cov(X, Y)) / (var(X) + var(Y) - 2 * cov(X, Y))
 }
 
-alpha.fn(Portfolio, 1:100)
+# Attraverso la funzione, precedentemente creata, alpha.fn()
+# alla quale passiamo come parametri data = Portfolio e index =
+# 1:100 (vettore di interi da 1 a 100), riportiamo in output
+# il risultato della formula precedentemente citata
+alpha.fn(Portfolio, 1:100) # 0.5758321
 
+# Definiamo un seme per garantire la riproducibilità dei risultati
 set.seed(7)
+
+# Attraverso la funzione, precedentemente creata, alpha.fn()
+# alla quale passiamo come parametri data = Portfolio e index =
+# sample(100, 100, replace = T) (vettore di lunghezza 100 contenente
+# i numeri interi da 1 a 100 estratti casualmente con ripetizione,
+# attraverso la funzione sample()), riportiamo in output
+# il risultato della formula precedentemente citata
 alpha.fn(Portfolio, sample(100, 100, replace = T))
 
+# Attraverso la funzione boot() contenuta nell'omonimo pacchetto,
+# è possibile ottenere in output gli elementi utili per stimare
+# la variabilità (cioè l'incertezza) della statistica alpha,
+# calcolata sulla base di campioni bootstrap.
+# In particolare, la funzione boot() esegue R = 1000 campionamenti
+# casuali con ripetizione (bootstrap) dalle righe del dataset Portfolio.
+# Per ciascun campione, viene ricalcolata la statistica alpha utilizzando
+# la funzione alpha.fn (definita precedentemente).
+# Il risultato è un oggetto che contiene:
+# - la stima originale di alpha t0 (calcolata sull'intero dataset),
+# - il vettore delle 1000 stime bootstrap di alpha (t),
+# - e informazioni utili per stimare la sua deviazione standard,
+#   costruire intervalli di confidenza o valutare la sua stabilità.
 boot(Portfolio, alpha.fn, R = 1000)
+# ORDINARY NONPARAMETRIC BOOTSTRAP
+#
+# Call:
+# boot(data = Portfolio, statistic = alpha.fn, R = 1000)
+#
+# Bootstrap Statistics :
+#      original      bias    std. error
+# t1* 0.5758321 0.001767625  0.08988222
 
+names(boot(Portfolio, alpha.fn, R = 1000))
+# [1] "t0"        "t"         "R"         "data"      "seed"      "statistic"
+# [7] "sim"       "call"      "stype"     "strata"    "weights"
+
+# richiamando l'oggetto t contenuto nell'ouput della funzione boot()
+# ci restituisce le 1000 stime della funzione alpha ottenuta utilizzando
+# i dati dei 1000 campioni bootstrap
+boot(Portfolio, alpha.fn, R = 1000)$t
+
+# Definiamo una nuova funzione boot.fn che prende due argomenti:
+# - data: un data frame, in questo caso presumibilmente il dataset Auto,
+# - index: un vettore di indici da utilizzare per selezionare le righe del dataset.
+#
+# All'interno della funzione, si stima un modello di regressione lineare
+# in cui mpg è la variabile risposta e horsepower è la variabile esplicativa.
+# Vengono considerate solo le osservazioni i cui indici sono specificati
+# nel vettore index.
+# La funzione restituisce i coefficienti stimati del modello.
 boot.fn <- function(data, index)
  coef(lm(mpg ~ horsepower, data = data, subset = index))
 
-boot.fn(Auto, 1:392)
+# Eseguiamo la funzione boot.fn passando:
+# - il dataset Auto,
+# - il vettore di indici da 1 a 392 (ovvero tutte le osservazioni),
+# ottenendo così i coefficienti di regressione stimati utilizzando
+# l’intero dataset senza campionamento.
+boot.fn(Auto, 1:392)  # Output: (Intercept) e coefficiente di horsepower
+# (Intercept)  horsepower
+#  39.9358610  -0.1578447
 
+# Fissiamo il seme per rendere riproducibili i risultati del bootstrap.
 set.seed(1)
+
+# Eseguiamo boot.fn con:
+# - il dataset Auto,
+# - un campione bootstrap di 392 osservazioni estratte con ripetizione.
+# Questo simula una singola ripetizione della procedura bootstrap,
+# stimando i coefficienti della regressione lineare su un campione
+# casuale (con ripetizione) dello stesso dataset.
 boot.fn(Auto, sample(392, 392, replace = T))
+# (Intercept)  horsepower
+#  40.6952857  -0.1625602
 
+# Applichiamo la funzione boot() al dataset Auto con la funzione boot.fn
+# (già definita in precedenza per stimare il modello lineare mpg ~ horsepower)
+# e ripetiamo il processo di bootstrap R = 1000 volte.
+# In questo modo otteniamo una stima dell'incertezza associata ai coefficienti
+# del modello di regressione lineare semplice tramite campionamento bootstrap.
 boot(Auto, boot.fn, 1000)
 
+# Otteniamo i coefficienti stimati del modello di regressione lineare
+# mpg ~ horsepower, calcolati sull'intero dataset Auto.
+# La funzione summary() restituisce un oggetto complesso,
+# dal quale estraiamo solo la matrice dei coefficienti (con stime,
+# errori standard, t-statistiche e p-value) tramite $coef.
 summary(lm(mpg ~ horsepower, data = Auto))$coef
+#               Estimate  Std. Error   t value      Pr(>|t|)
+# (Intercept) 39.9358610 0.717498656  55.65984 1.220362e-187
+# horsepower  -0.1578447 0.006445501 -24.48914  7.031989e-81
 
+# Ridefiniamo la funzione boot.fn per adattare un modello di regressione
+# lineare in cui mpg è la variabile risposta e i predittori sono:
+# horsepower e horsepower^2.
+# La funzione I(horsepower^2) consente di includere horsepower al quadrato
+# come termine esplicativo esplicito nel modello (senza usare poly()).
+# Come prima, il parametro index permette di selezionare le righe del dataset
+# da utilizzare per ciascun campione bootstrap.
 boot.fn <- function(data, index)
- coef(
- lm(mpg ~ horsepower + I(horsepower^2),
- data = data, subset = index)
- )
+ coef(lm(mpg ~ horsepower + I(horsepower^2), data = data, subset = index))
+
+# Fissiamo il seme del generatore di numeri casuali per assicurare
+# la replicabilità del bootstrap.
 set.seed(1)
+
+# Applichiamo la funzione boot() con la nuova versione di boot.fn,
+# stimando tramite bootstrap (R = 1000 ripetizioni) i coefficienti del
+# modello quadratico mpg ~ horsepower + horsepower^2, usando campioni
+# con ripetizione estratti dal dataset Auto.
+# L'obiettivo è ottenere una stima empirica della variabilità
+# dei coefficienti del modello non lineare.
 boot(Auto, boot.fn, 1000)
+# Call:
+# boot(data = Auto, statistic = boot.fn, R = 1000)
+#
+# Bootstrap Statistics :
+#       original        bias    std. error
+# t1* 39.9358610  0.0148776968 0.854981056
+# t2* -0.1578447 -0.0002877407 0.007372505
 
-summary(
- lm(mpg ~ horsepower + I(horsepower^2), data = Auto)
- )$coef
-
+# Estraiamo la matrice dei coefficienti stimati dal modello quadratico
+# mpg ~ horsepower + horsepower^2 calcolato sull'intero dataset Auto.
+# summary() restituisce un oggetto con varie informazioni, da cui
+# selezioniamo solo i coefficienti tramite $coef.
+# La tabella risultante include:
+# - le stime dei coefficienti (intercetta, horsepower e horsepower^2),
+# - gli errori standard,
+# - le t-statistiche,
+# - i p-value associati ai test di significatività.
+summary(lm(mpg ~ horsepower + I(horsepower^2), data = Auto))$coef
+#                     Estimate   Std. Error   t value      Pr(>|t|)
+# (Intercept)     56.900099702 1.8004268063  31.60367 1.740911e-109
+# horsepower      -0.466189630 0.0311246171 -14.97816  2.289429e-40
+# I(horsepower^2)  0.001230536 0.0001220759  10.08009  2.196340e-21
