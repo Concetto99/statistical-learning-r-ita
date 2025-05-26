@@ -381,25 +381,107 @@ coef(regfit.best, 7)
 #    DivisionW      PutOuts
 # -118.4364998    0.2526925
 
-#
+# Si definisce una funzione custom denominata predict.regsubsets, utile per
+# implementare una funzione di predizione compatibile con oggetti di classe
+# "regsubsets", come quelli restituiti dalla funzione regsubsets() del
+# pacchetto leaps.
+# Questa funzione permette di effettuare previsioni sui dati newdata,
+# specificando quale modello utilizzare tramite l'argomento id (numero
+# di variabili da includere).
+# All'interno della funzione:
+# - Si estrae la formula originale utilizzata nella funzione regsubsets.
+# - Si costruisce la matrice modello (mat) sui nuovi dati utilizzando
+# model.matrix().
+# - Si recuperano i coefficienti del modello selezionato (coefi)
+# corrispondente a id.
+# - Si selezionano dalla matrice mat solo le colonne relative alle
+# variabili usate nel modello.
+# - Infine si restituiscono le predizioni come prodotto tra la matrice
+# delle variabili selezionate e i coefficienti del modello.
 predict.regsubsets <- function(object, newdata, id, ...) {
     form <- as.formula(object$call[[2]])
     mat <- model.matrix(form, newdata)
     coefi <- coef(object, id = id)
     xvars <- names(coefi)
     mat[, xvars] %*% coefi
- }
+}
 
+# Assegniamo all'oggetto regfit.best l'output della funzione
+# regsubset che permette di effettuare una best subset selection
+# alla quale passiamo la formula per il modello da considerare
+# il dataset Hitters e il numero massimo di variabili da includere
 regfit.best <- regsubsets(Salary ~ ., data = Hitters, nvmax = 19)
+
+# con il comando coef() al quale passiamo l'oggetto di classe regsubsets
+# e id = 7 riportiamo in output il vettore dei coefficienti per le
+# variabili del miglior modello con 7 variabili
 coef(regfit.best, 7)
 
+# assegniamo a k il valore 10
 k <- 10
+
+# assegniamo ad n l'elemento corrispondente al numero di righe del
+# dataset Hitters
 n <- nrow(Hitters)
+n # 263
+
+# Definiamo il seme per la riproducibilità del vettore folds
 set.seed(1)
+
+# Assegniamo all'oggetto folds un vettore di lunghezza pari a n (263)
+# contenente come elementi i medesimi valori di un vettore composto da numeri
+# ripetuti da 1 a 10 (funzione rep()), ma permutati (funzione sample())
 folds <- sample(rep(1:k, length = n))
+
+rep(1:k, length = n)
+#  [1]  1  2  3  4  5  6  7  8  9 10  1  2  3  4  5  6  7  8  9 10  1  2  3  4  5
+# [26]  6  7  8  9 10  1  2  3  4  5  6  7  8  9 10  1  2  3  4  5  6  7  8  9 10
+# ...
+# [226]  6  7  8  9 10  1  2  3  4  5  6  7  8  9 10  1  2  3  4  5  6  7  8  9 10
+# [251]  1  2  3  4  5  6  7  8  9 10  1  2  3
+
+folds
+# [1]  4  9  2  7  2 10  4  3 10  2  6  8  4  8  8  5  5  7  4  9  6 10  3  4  8
+# [26]  1  3  7  1  5  5  8  2  4  2  5  5  9  7  5  3  1  3  1  7  8  1  8  9  7
+...
+# [226]  1  8  4  2  6  7  6  6  2  7  9  4  2  8  6  8 10  7 10  9  5  8  4  1  3
+# [251] 10  7  2  1 10  4  2  3  4  3  9  5  4
+
+# si assegnia all'oggetto cv.errors la matrice avente 10 righe e 19 colonne
+# i cui elementi sono NA, le righe non hanno un nome, mentre le colonne
+# assumono come nome le stringhe con numeri da "1" a "19"
 cv.errors <- matrix(NA, k, 19, dimnames = list(NULL, paste(1:19)))
+cv.errors
+#       1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+#  [1,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+#  [2,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+#  [3,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+#  [4,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+#  [5,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+#  [6,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+#  [7,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+#  [8,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+#  [9,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
+# [10,] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
 
-
+# Attraverso le seguenti righe di codice si eseguono due cicli for
+# annidati, in cui per ogni j da 1 a k si eseguono le seguenti istruzioni:
+# - si assegna all'oggetto best.fit l'output della funzione regsubset
+# attraverso la quale si effettua una best subset selection delle variabili
+# di Hitters a partire dal modello nullo, fino al modello completo con
+# 19 variabili per predire la variabile Salary, si estraggono le sole righe
+# di Salary per cui il vettore folds è diverso dall'indice j, nella pratica
+# tutti gli elementi non facenti parte della k-esima fold
+# - si procede con il ciclo for per i che va da 1 a 19, in cui:
+#  1. si assegna alla variabile pred il vettore delle previsioni tramite
+#     la funzione predict() creata in precedenza in cui passiamo come
+#     parametri l'oggetto di classe regsubsets, e i dati di test ovvero
+#     le righe del dataset Hitters per cui l'indice ha rispettivamente
+#     nella medesima posizione di folds il numero j. Si passa come parametro
+#     anche il numero di variabili considerate.
+# 2. si aggiorna la matrice cv.errors alla riga j-esima e colonna i-esima
+#    con la media degli scarti al quadrato dei valori di test osservati
+#    e quelli predetti.
 for (j in 1:k) {
     best.fit <- regsubsets(Salary ~ ., data = Hitters[folds != j, ], nvmax = 19)
     for (i in 1:19) {
@@ -408,17 +490,41 @@ for (j in 1:k) {
     }
 }
 
-
+# Si assegna all'oggetto mean.cv.errors un vettore di lunghezza 19
+# avente come elementi la media degli MSE di test per ogni miglior
+# modello di j variabili per le 10 fold.
+# La funzione apply() prende come argomenti l'oggetto su cui effettuare
+# le operazioni richieste, overo la matrice cv.errors per la quale si
+# calcola per colonna (secondo parametro uguale a 2) la media passata
+# come terzo parametro tramite la funzione mean
 mean.cv.errors <- apply(cv.errors, 2, mean)
-mean.cv.errors
 
+mean.cv.errors
+#       1        2        3        4        5        6        7        8
+#143439.8 126817.0 134214.2 131782.9 130765.6 120382.9 121443.1 114363.7
+#       9       10       11       12       13       14       15       16 
+#115163.1 109366.0 112738.5 113616.5 115557.6 115853.3 115630.6 116050.0
+#      17       18       19
+#116117.0 116419.3 116299.1
+
+
+# Attraverso la funzione plot() stampiamo lo scatterplot avente nell'asse
+# delle ascisse l'indice degli elementi (1 a 19) e nell'asse delle ordintate
+# i valori del vettore mean.cv.errors, con punti uniti da una spezzata
 par(mfrow = c(1, 1))
 plot(mean.cv.errors, type = "b")
 
-
+# Si assegna all'oggetto reg.best l'output della funzione reg.best
+# la quale ci permette di effettuare una best subset selection per
+# tutti i modelli a partire dal modello nullo fino al modello con
+# 19 variabili per predire la variabile Salary e utilizzando le
+# colonne del dataset Hitters e tutte le righe
 reg.best <- regsubsets(Salary ~ ., data = Hitters, nvmax = 19)
-coef(reg.best, 10)
 
+# Attraverso il comando coef applicato ad un oggetto di tipo regsubsets
+# e id=10 riportiamo in output i coefficienti del miglior modello con
+# 10 variabili
+coef(reg.best, 10)
 
 
 
