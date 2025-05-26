@@ -251,18 +251,173 @@ coef(regfit.full, 6)
 ## Forward and Backward Stepwise Selection ##
 #############################################
 
-#
+# Si assegna all'oggetto regfit.fwd l'output della funzione regsubset con
+# metodo forward che implementa una Forward Stepwise Selection, una
+# procedura di selezione progressiva che parte da un modello
+# nullo (nessuna variabile) e aggiunge a ogni passaggio la variabile che
+# migliora maggiormente il modello secondo un criterio di bontà del fit
+# (di default RSS).
+# Il parametro nvmax = 19 specifica che il numero massimo di variabili
+# selezionabili è 19, ovvero tutte quelle disponibili nel dataset.
 regfit.fwd <- regsubsets(Salary ~ ., data = Hitters, nvmax = 19, method = "forward")
 summary(regfit.fwd)
-#
+
+# Si assegna all'oggetto regfit.bwd l'output della funzione regsubset con
+# metodo backward che implementa una Forward Stepwise Selection, una procedura
+# di selezione progressiva che parte da un modello completo (tutte le variabili)
+# e rimuove a ogni passaggio la variabile meno significativa, ovvero quella la
+# cui eliminazione peggiora meno il modello.
+# Anche in questo caso si impone come massimo numero di variabili nvmax = 19.
 regfit.bwd <- regsubsets(Salary ~ ., data = Hitters, nvmax = 19, method = "backward")
 summary(regfit.bwd)
 
-#
-coef(regfit.full, 7)
-coef(regfit.fwd, 7)
-coef(regfit.bwd, 7)
+?coef.regsubsets
+# Il comando coef() al quale passiamo l'oggetto regfit.full, di classe
+# regsubsets e l'id = 7 ovvero il miglior modello ottenuto tramite
+# best subset selection avente 7 predittori, riporta in output i
+# coefficienti del modello di regressione selezionato
+coef(regfit.full, id = 7)
+#  (Intercept)         Hits        Walks       CAtBat        CHits       CHmRun
+#   79.4509472    1.2833513    3.2274264   -0.3752350    1.4957073    1.4420538
+#    DivisionW      PutOuts
+# -129.9866432    0.2366813
 
+# Il comando coef() al quale passiamo l'oggetto regfit.fwd, di classe
+# regsubsets e l'id = 7 ovvero il miglior modello ottenuto tramite
+# forward selection avente 7 predittori, riporta in output i
+# coefficienti del modello di regressione selezionato
+coef(regfit.fwd, 7)
+#  (Intercept)        AtBat         Hits        Walks         CRBI       CWalks
+#  109.7873062   -1.9588851    7.4498772    4.9131401    0.8537622   -0.3053070
+#    DivisionW      PutOuts
+# -127.1223928    0.2533404
+
+# Il comando coef() al quale passiamo l'oggetto regfit.bwd, di classe
+# regsubsets e l'id = 7 ovvero il miglior modello ottenuto tramite
+# backward selection avente 7 predittori, riporta in output i
+# coefficienti del modello di regressione selezionato
+coef(regfit.bwd, 7)
+#  (Intercept)        AtBat         Hits        Walks        CRuns       CWalks 
+#  105.6487488   -1.9762838    6.7574914    6.0558691    1.1293095   -0.7163346 
+#    DivisionW      PutOuts
+# -116.1692169    0.3028847
+
+
+########################################################################
+## Selezionare il miglior modello usando Cross Validation o Bootstrap ##
+########################################################################
+
+# A valle della scelta di ogni miglior modello a parità del numero
+# di variabili, la scelta del miglior modello è stata effettuata
+# utilizzando l'indice R2 Aggiustato (o alternativamente BIC e Cp)
+# Un altro modo per effettuare questa scelta è possibile tramite
+# la Cross Validation o il Bootstrap
+
+# Si definisce il seme per la riproducibilità del vettore train
+# per il quale utilizziamo la funzione sample()
+set.seed(1)
+
+# Si assegna all'oggetto train il vettore booleano di lunghezza pari
+# al numero di righe del dataset Hitters, i cui elementi sono i valori
+# TRUE o FALSE, estratti casualmente con reimmissione
+train <- sample(c(TRUE, FALSE), nrow(Hitters), replace = TRUE)
+
+# Si assegna all'oggetto test il vettore booleano di lunghezza pari
+# a train, i cui elementi sono complementari all'oggetto train
+test <- (!train)
+
+# Si assegna all'oggetto regfit.best l'output della funzione regsubsets, la
+# quale ci permette di effettuare una Best Subset Selection per predire
+# la variabile Salary utilizzando un sottoinsieme delle variabili esplicative
+# contenute nel dataset Hitters. A differenza della procedura precedente, qui
+# la selezione viene effettuata solo sui dati di training (Hitters[train, ]),
+# ovvero su un sottoinsieme casuale del dataset originale, individuato dal
+# vettore booleano train. Il parametro nvmax = 19 indica che vogliamo
+# considerare modelli con al massimo 19 variabili predittive
+# (ossia tutte quelle disponibili).
+regfit.best <- regsubsets(Salary ~ ., data = Hitters[train, ], nvmax = 19)
+
+# Si assegna all'oggetto test.mat la matrice modello a partire dai dati
+# di test del dataset Hitters. La matrice avrà quindi una prima colonna
+# formata da 1 di lunghezza pari al vettore test, e successivamente
+# tutte le colonne di Hitters eccetto Salary, e solamente le righe per
+# cui all'i-esima posizione del vettore booleano test è presente il
+# valore TRUE
+test.mat <- model.matrix(Salary ~ ., data = Hitters[test, ])
+
+# Assegniamo all'oggetto val.errors un vettore di lunghezza 19 i cui
+# elementi saranno degli NA (missing values)
+val.errors <- rep(NA, 19)
+
+# Attraverso un ciclo for per i che va da 1 a 19 eseguiamo le seguenti istruzioni:
+# - si assegna all'oggetto coefi il vettore dei coefficienti del
+# miglior modello con un numero pari a i di regressori scelto
+# usando l'R2 maggiore
+# - si assegna all'oggetto pred l'output del prodotto matriciale
+# tra la matrice test.mat in cui vengono estratte le sole colonne
+# presenti nell'oggetto coefi moltiplicato per il vettore dei coefficienti.
+# Si assegna all'i-esimo elemento dell'oggetto val.errors, sovrascrivendolo,
+# la media degli errori al quadrato tra i valori osservati di Salary
+# e i valori predetti, selezionando solo i dati di test
+for (i in 1:19) {
+ coefi <- coef(regfit.best, id = i)
+ pred <- test.mat[, names(coefi)] %*% coefi
+ val.errors[i] <- mean((Hitters$Salary[test] - pred)^2)
+}
+val.errors
+#  [1] 164377.3 144405.5 152175.7 145198.4 137902.1 139175.7 126849.0 136191.4
+#  [9] 132889.6 135434.9 136963.3 140694.9 140690.9 141951.2 141508.2 142164.4
+# [17] 141767.4 142339.6 142238.2
+
+# Il comando which.min restituisce la posizione in cui vi è
+# il valor minimo tra gli elementi del vettore val.errors
+which.min(val.errors) # 7
+
+# Attraverso il comando coef riportiamo in output il vettore
+# dei coefficienti del modello migliore con 7 regressori
+coef(regfit.best, 7)
+#  (Intercept)        AtBat         Hits        Walks        CRuns       CWalks
+#   67.1085369   -2.1462987    7.0149547    8.0716640    1.2425113   -0.8337844
+#    DivisionW      PutOuts
+# -118.4364998    0.2526925
+
+#
+predict.regsubsets <- function(object, newdata, id, ...) {
+    form <- as.formula(object$call[[2]])
+    mat <- model.matrix(form, newdata)
+    coefi <- coef(object, id = id)
+    xvars <- names(coefi)
+    mat[, xvars] %*% coefi
+ }
+
+regfit.best <- regsubsets(Salary ~ ., data = Hitters, nvmax = 19)
+coef(regfit.best, 7)
+
+k <- 10
+n <- nrow(Hitters)
+set.seed(1)
+folds <- sample(rep(1:k, length = n))
+cv.errors <- matrix(NA, k, 19, dimnames = list(NULL, paste(1:19)))
+
+
+for (j in 1:k) {
+    best.fit <- regsubsets(Salary ~ ., data = Hitters[folds != j, ], nvmax = 19)
+    for (i in 1:19) {
+        pred <- predict(best.fit, Hitters[folds == j, ], id = i)
+        cv.errors[j, i] <- mean((Hitters$Salary[folds == j] - pred)^2)
+    }
+}
+
+
+mean.cv.errors <- apply(cv.errors, 2, mean)
+mean.cv.errors
+
+par(mfrow = c(1, 1))
+plot(mean.cv.errors, type = "b")
+
+
+reg.best <- regsubsets(Salary ~ ., data = Hitters, nvmax = 19)
+coef(reg.best, 10)
 
 
 
@@ -271,6 +426,13 @@ coef(regfit.bwd, 7)
 ## Ridge Regression ##
 ######################
 
+x <- model.matrix(Salary ~ ., Hitters)[, -1]
+y <- Hitters$Salary
+
+library(glmnet)
+
+grid <- 10^seq(10, -2, length = 100)
+ridge.mod <- glmnet(x, y, alpha = 0, lambda = grid)
 
 
 ###########
