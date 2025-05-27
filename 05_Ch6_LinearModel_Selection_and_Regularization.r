@@ -763,7 +763,7 @@ set.seed(1)
 
 # Si assegna all'oggetto cv.out l'output della funzione cv.glmnet, la quale
 # ci permette di effettuare una cross validazione per poter trovare il
-# valore di lambda che minimizza l'errore degli scarti al quadrato.
+# valore di lambda che minimizza la media degli scarti al quadrato.
 # Passiamo come parametri della funzione la matrice dei regressori selezionando
 # i soli dati di train, la variabile di risposta per i soli dati di train
 # e alpha = 0 per trovare i coefficienti via Ridge Regression.
@@ -788,10 +788,10 @@ cv.out$lambda[1:10]
 
 # Attraverso il comando plot() associato ad un oggetto di classe cv.glmnet
 # otteniamo lo scatterplot che mostra l'andamento dell'MSE ottenuto via
-# cross validazione al variare dei valori di lambda. I pallini rossi indicano
-# la media degli MSE ottenuti nei 10 gruppi (per ogni lambda). La banda attorno
-# ai punti è data da +- standard error, ovvero l'incertezza associata alla
-# misura (MSE) per ogni valore di lambda
+# cross validazione al variare dei valori di log lambda.
+# I pallini rossi indicano la media degli MSE ottenuti nei 10 gruppi
+# (per ogni lambda). La banda attorno ai punti è data da +- standard error,
+# ovvero l'incertezza associata alla misura (MSE) per ogni valore di lambda
 plot(cv.out)
 
 # assegniamo all'oggetto bestlam il valore di lambda.min contenuto all'interno
@@ -801,7 +801,7 @@ bestlam <- cv.out$lambda.min
 bestlam # 326.0828
 
 # Assegniamo all'oggetto ridge.pred le previsioni utilizzando i coefficienti del
-# modello di ridge.mod, utilizzando il valore di lambda = 326.0828, per i valori
+# modello ridge.mod, utilizzando il valore di lambda = 326.0828, per i valori
 # di test
 ridge.pred <- predict(ridge.mod, s = bestlam, newx = x[test, ]) 
 
@@ -828,30 +828,102 @@ predict(out, type = "coefficients", s = bestlam)[1:20, ]
 ## LASSO ##
 ###########
 
-
+# Si assegna all'oggetto lasso.mod l'output della funzione glmnet alla
+# quale vengono passati come parametri la matrice x contenente i regressori
+# selezionando le solo righe i cui indici sono presenti come elementi
+# del vettore train, il vettore della variabile di risposta in cui vengono
+# selezionati solo gli indici i cui elementi sono presenti nel vettore
+# train, alpha = 1 affinchè i coefficienti beta dal modello lineare
+# vengano stimati via LASSO e il vettore grid,
+# contenente una griglia di valori per il parametro lambda
 lasso.mod <- glmnet(x[train, ], y[train], alpha = 1, lambda = grid)
+
+# Attraverso la funzione plot() applicata su un oggetto di classe glmnet
+# otteniamo il grafico che mostra come variano i coefficienti stimati
+# dei regressori al variare della norma L1. Ogni linea nel grafico
+# corrisponde ad un diverso predittore nel modello
 plot(lasso.mod)
 
+# Definiamo il seme per la riproducibilità dei risultati in quanto
+# utilizziamo la funzione cv.glmnet()
 set.seed(1)
+
+# Si assegna all'oggetto cv.out l'output della funzione cv.glmnet, la quale
+# ci permette di effettuare una cross validazione per poter trovare il
+# valore di lambda che minimizza la media degli scarti al quadrato.
+# Passiamo come parametri della funzione la matrice dei regressori selezionando
+# i soli dati di train, la variabile di risposta per i soli dati di train
+# e alpha = 1 per trovare i coefficienti via LASSO.
+# Per ogni valore di lambda scelto da una griglia di default dalla funzione
+# viene partizionato il dataset in k = 10 fold (di default) e per ogni lambda
+# e ogni k fold vengono stimati i beta tramite ridge utilizzando i dati di
+# tutte eccetto la k esima fold e valutando l'errore tra le previsioni
+# delle osservazioni della k-esima fold e le y osservate. Infine viene
+# fatta una media dei 10 errori per trovare l'errore medio per il lambda
+# in questione. Questa operazione viene fatta per ogni lambda all'interno
+# della griglia di valori (cv.out$lambda)
 cv.out <- cv.glmnet(x[train, ], y[train], alpha = 1)
+
+# Attraverso il comando plot() associato ad un oggetto di classe cv.glmnet
+# otteniamo lo scatterplot che mostra l'andamento dell'MSE ottenuto via
+# cross validazione al variare dei valori di log lambda.
+# I pallini rossi indicano la media degli MSE ottenuti nei 10 gruppi
+# (per ogni lambda). La banda attorno ai punti è data da +- standard error,
+# ovvero l'incertezza associata alla misura (MSE) per ogni valore di lambda
 plot(cv.out)
 
-
+# assegniamo all'oggetto bestlam il valore di lambda.min contenuto all'interno
+# dell'oggetto cv.out, corrispondente al valore di lambda che minimizza l'MSE
+# ottenuto via cross validazione
 bestlam <- cv.out$lambda.min
-lasso.pred <- predict(lasso.mod, s = bestlam,
- newx = x[test, ])
-mean((lasso.pred - y.test)^2)
+bestlam # 7.025241
 
+# Assegniamo all'oggetto lasso.pred le previsioni utilizzando i coefficienti del
+# modello lasso.mod, utilizzando il valore di lambda = 7.025241, per i valori
+# di test
+lasso.pred <- predict(lasso.mod, s = bestlam, newx = x[test, ])
 
+# Calcoliamo la media della somma degli errori al quadrato tra le previsioni e
+# i valori osservati di test. Come si può notare il valore è molto più basso
+# rispetto a quelli calcolati in precedenza
+mean((lasso.pred - y.test)^2) # 144038.1
+
+# Assegniamo all'oggetto out l'output della funzione glmnet, la quale ci
+# permette di stimare i coefficienti di un modello di regressione lineare
+# via LASSO (utilizzando il parametro alpha = 1) e passando
+# come regressori la matrice dei dati x e come variabile di risposta y
 out <- glmnet(x, y, alpha = 1, lambda = grid)
-lasso.coef <- predict(out, type = "coefficients",
- s = bestlam)[1:20, ]
+
+# Si assegna all'oggetto lasso.coef l'output delle funzione predict()
+# associata ad un oggetto di classe glmnet, passando type = "coefficients"
+# e s = bestlam (ovvero il lambda scelto via cross validazione) otteniamo
+# i primi 20 coefficienti del miglior modello di regressione lineare scelto
+# ottenuto via LASSO
+lasso.coef <- predict(out, type = "coefficients", s = bestlam)[1:20, ]
 lasso.coef
+#   (Intercept)         AtBat          Hits         HmRun          Runs
+#   23.68441793   -0.37178105    3.01391941    0.00000000    0.00000000
+#           RBI         Walks         Years        CAtBat         CHits
+#    0.00000000    2.68842856   -2.55317456    0.00000000    0.00000000
+#        CHmRun         CRuns          CRBI        CWalks       LeagueN
+#    0.09451476    0.28793069    0.41837709   -0.07284111   24.96194143
+#     DivisionW       PutOuts       Assists        Errors    NewLeagueN
+# -118.17301728    0.24407297    0.00000000   -0.80173475    0.00000000
 
-
+# Riportiamo in output i coefficienti del modello di regressione lineare
+# ottenuti via LASSO utilizzando per coercizione il vettore booleano
+# che assume valore TRUE se l'elemento i-esimo di lasso.coef è diverso
+# da zero, FALSE viceversa. In questo modo selezioniamo solo i coefficienti
+# del modello diversi da 0. LASSO, a differenza di Ridge porta rapidamente
+# i coefficienti verso lo zero per via del suo vincolo, dunque utilizzando
+# il metodo LASSO, si crede (per ipotesi) nella sparsità dei coefficienti
 lasso.coef[lasso.coef != 0]
-
-
+#   (Intercept)         AtBat          Hits         Walks         Years
+#   23.68441793   -0.37178105    3.01391941    2.68842856   -2.55317456
+#        CHmRun         CRuns          CRBI        CWalks       LeagueN
+#    0.09451476    0.28793069    0.41837709   -0.07284111   24.96194143
+#     DivisionW       PutOuts        Errors
+# -118.17301728    0.24407297   -0.80173475
 
 
 
