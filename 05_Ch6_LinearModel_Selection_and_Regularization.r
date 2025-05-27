@@ -532,18 +532,326 @@ coef(reg.best, 10)
 ## Ridge Regression ##
 ######################
 
+# Assegniamo all'oggetto x la matrice modello composta da tutte
+# le colonne del dataset Hitters eccetto Salary dalla quale selezioniamo
+# tutte le righe ed escludiamo la colonna contenente l'intercetta
 x <- model.matrix(Salary ~ ., Hitters)[, -1]
+
+x[1:5,1:5]
+#                   AtBat Hits HmRun Runs RBI
+# -Alan Ashby         315   81     7   24  38
+# -Alvin Davis        479  130    18   66  72
+# -Andre Dawson       496  141    20   65  78
+# -Andres Galarraga   321   87    10   39  42
+# -Alfredo Griffin    594  169     4   74  51
+
+model.matrix(Salary ~ ., Hitters)[1:5,1:5]
+#                   (Intercept) AtBat Hits HmRun Runs
+# -Alan Ashby                 1   315   81     7   24
+# -Alvin Davis                1   479  130    18   66
+# -Andre Dawson               1   496  141    20   65
+# -Andres Galarraga           1   321   87    10   39
+# -Alfredo Griffin            1   594  169     4   74
+
+
+# Assegniamo all'oggetto y il vettore contente gli elementi della
+# colonna Salary contenuta in Hitters
 y <- Hitters$Salary
 
+# Attraverso la funzione library() carichiamo il pacchetto glmnet
+# contenente le funzioni per effettuare la Ridge Regression
+# install.packages("glmnet")
 library(glmnet)
 
+# Assegniamo all'oggetto grid il vettore di lunghezza 100 contenente
+# come elementi i numeri compresi tra 10^(10) e 10^(-2) dove l'apice
+# è composto da un vettore di elementi tra 10 e -2 equidistatanti
+# tra loro
 grid <- 10^seq(10, -2, length = 100)
+
+seq(10, -2, length = 100)[1:5]
+# 10.000000  9.878788  9.757576  9.636364  9.515152
+seq(10, -2, length = 100)[1] - seq(10, -2, length = 100)[2] # 0.1212121
+seq(10, -2, length = 100)[2] - seq(10, -2, length = 100)[3] # 0.1212121
+
+# Si assegna al'oggetto ridge.mod l'output della funzione glmnet attraverso
+# la quale è possibile implementare una Ridge Regression. Si passano come
+# parametri gli oggetti x (matrice contenente le colonne di Hitters ad
+# eccezione della variabile Salary), y (vettore contenente il vettore dei
+# valori di Salary), alpha = 0 indica che è richiesta la stima dei coefficienti
+# via Ridge Regression, infine passiamo a lambda l'oggeto grid contenente
+# la griglia di valori tra 10^10 a 10^-2, attraverso i quali verranno
+# calcolati i coefficienti beta usando i 100 valori di lambda, ovvero
+# la penalty
 ridge.mod <- glmnet(x, y, alpha = 0, lambda = grid)
+class(ridge.mod) #  "elnet"  "glmnet"
+
+# attraverso il comando dim applicato alla matrice dei coefficienti
+# ottenuta tramite coercizione con il comando coef() applicato ad
+# un oggetto di classe glmnet, riportiamo in output le dimensioni
+# della matrice dei coefficienti ottenuti tramite ridge regression
+# Nello specifico avremo 20 righe, intercetta + 19 variabili e
+# 100 colonne, ovvero ogni colonna corrisponde ai coefficienti ottenuti
+# utilizzando un valore di lambda differente (del vettore grid)
+dim(coef(ridge.mod)) # 20 100
+
+# attraverso il seguente comando selezioniamo il 50esimo elemento
+# dell'oggetto lambda contenuto all'interno di ridge.mod
+ridge.mod$lambda[50] # 11497.57
+
+grid[50] # 11497.57
+
+# selezioniamo tutte le righe per la 50esima colonna di coef(ridge.mod)
+# la quale contiene i coefficienti ottenuti via Ridge Regression
+# usando come valore per lambda 11497.57
+coef(ridge.mod)[, 50]
+#   (Intercept)         AtBat          Hits         HmRun          Runs
+# 407.356050200   0.036957182   0.138180344   0.524629976   0.230701523
+#           RBI         Walks         Years        CAtBat         CHits
+#   0.239841459   0.289618741   1.107702929   0.003131815   0.011653637
+#        CHmRun         CRuns          CRBI        CWalks       LeagueN
+#   0.087545670   0.023379882   0.024138320   0.025015421   0.085028114
+#     DivisionW       PutOuts       Assists        Errors    NewLeagueN
+#  -6.215440973   0.016482577   0.002612988  -0.020502690   0.301433531
+
+# Si riporta in output la radice quadrata della somma dei coefficienti
+# al quadrato per lambda = 11497.57 esclusa l'intercetta
+sqrt(sum(coef(ridge.mod)[-1, 50]^2)) # 6.360612
+
+# Riportiamo in output il 60 elemento del vettore dei valori di lambda
+# conenuto nell'oggetto ridge.mod
+ridge.mod$lambda[60] # 705.4802
+
+# Riportiamo in output i coefficienti beta ottenuti tramite ridge
+# regression per lambda = 705.4802 ovvero la 60esima colonna
+# dell'oggetto coef(ridge.mod)
+coef(ridge.mod)[, 60]
+
+# Si riporta in output la radice quadrata della somma dei coefficienti
+# al quadrato per lambda = 705.4802 esclusa l'intercetta
+sqrt(sum(coef(ridge.mod)[-1, 60]^2)) # 57.11001
+
+# i coefficienti beta sono più elevati utilizzando lambda = 705.4802
+# piuttosto che lambda = 11497.57
+
+# Attraverso il comando predict() applicato ad un oggetto di classe
+# glmnet e passando come parametro s (cioè lambda) = 50 e type = coefficients
+# riportiamo in output i coefficienti stimati via Ridge Regression
+# usando un valore di lambda = 50.
+# Seleziono le prime 20 righe e tutte le colonne: in realtà non servirebbe
+# perchè abbiamo appunto 20 coefficienti (20 righe 1 colonna)
+predict(ridge.mod, s = 50, type = "coefficients")[1:20, ]
+
+dim(predict(ridge.mod, s = 50, type = "coefficients")) # 20  1
+
+# Per valutare quale valore di lambda scegliere per trovare i
+# coefficienti che minimizzano l'MSE di test o in generale il
+# lambda che permette di trovare delle previsioni più accurate
+# su dei nuovi dati è necessario utilizzare un metodo per la
+# valutazione e scelta del parametro. Un metodo utile potrebbe
+# essere il Validation Set Approach
+
+# Definisco il seme per la riproducibilità del vettore train
+set.seed(1)
+
+# Assegno all'oggetto train il vettore di lunghezza pari alla
+# metà del numero di righe di x contenente i numeri interi estratti
+# casualmente senza ripetizione dal vettore contenente i valori
+# da 1 al numero delle righe di x
+train <- sample(1:nrow(x), nrow(x) / 2)
+train[1:5]
+
+# Assegno al vettore test i medesimi valori di train moltiplicati
+# per -1
+test <- (-train)
+test[1:5]
+
+# Assegno al vettore y.test i valori di y utilizzando il
+# vettore test come operatore di selezione. Essendo test un
+# vettore di interi negativi, escludo quindi quegli elementi
+y.test <- y[test]
+
+# Assegno all'oggetto ridge.mod l'output della funzione glmnet, alla
+# quale vengono passati come parametri la matrice x in cui vengono
+# selezionate solo le righe corrispondenti ai valori di train, il vettore
+# y per i soli valori corrispondenti ai valori contenuti in train,
+# alpha = 0 per stimare i coefficienti beta via Ridge Regression, il
+# vettore grid contenente 100 valori da assegnare come valori di lambda
+# e definire una threshold pari a 1^-12 come limite per la convergenza del
+# metodo
+ridge.mod <- glmnet(x[train, ], y[train], alpha = 0, lambda = grid, thresh = 1e-12)
+
+# Assegno all'oggetto ridge.pred l'output della funzione predict associata
+# ad un elemento di classe glmnet, passando come valore di lambda 4, e
+# effettuando le nuove previsioni per le osservazioni contenute all'interno
+# dell'oggetto x per il quale selezioniamo solo le righe di test, ovvero
+# escludendo le osservazioni con le quali è stato effettuato il training
+ridge.pred <- predict(ridge.mod, s = 4, newx = x[test, ])
+ridge.pred[1:10]
+# [1] 698.008962 582.002735 734.518396 792.181204  -8.598833  15.674911
+# [7] 566.404709 594.472755 305.001520 748.732632
+
+# Attraverso il comando mean() riportiamo il output la media degli
+# scarti al quadrato tra le previsioni e i valori osservati per il
+# dataset di test (MSE di test)
+mean((ridge.pred - y.test)^2) # 105670.4
+
+# Attraverso il comando mean() riportiamo il output la media
+# degli scarti al quadrato tra la media di Salary nel dataset
+# di train e i valori osservati per il dataset di test
+# (MSE di test utilizzando il modello nullo, solo intercetta)
+mean((mean(y[train]) - y.test)^2) # 204464.6
+
+# Si assegna all'oggetto ridge.pred l'output della funzione predict
+# passando un elemento di classe glmnet, lambda = 1^10 e utilizzando
+# la matrice x per i soli dati test come argnomento newdata.
+# L'oggetto restituisce le previsioni per le nuove osservazioni
+ridge.pred <- predict(ridge.mod, s = 1e10, newx = x[test, ])
+
+# Riportiamo in output la media degli scarti al quadrato tra i valori
+# predetti e i valori osservati per il dataset di test.
+# Utilizzando un valore di lambda = 1^10 costringiamo i coefficienti
+# ad andare verso lo zero ottenendo un MSE pari a quello utilizzando
+# un modello nullo
+mean((ridge.pred - y.test)^2) # 204464.6
+
+# Si assegna all'oggetto ridge.pred l'output della funzione predict
+# passando un elemento di classe glmnet, lambda = 0 e utilizzando
+# la matrice x per i soli dati test come argnomento newdata.
+# In questo caso passando il parametri exact = T, x (matrice dei dati di train)
+# e y (vettore della risposta di train) sto dicendo di usare sostanzialmente OLS
+# in quanto non vi sarà nessuna penalizzazione.
+# L'oggetto restituisce le previsioni per le nuove osservazioni
+ridge.pred <- predict(ridge.mod, s = 0, newx = x[test, ], exact = T, x = x[train, ], y = y[train])
+
+# Riportiamo in output la media degli scarti al quadrato tra i valori
+# predetti e i valori osservati per il dataset di test.
+# Utilizzando un valore di lambda = 0 è equivalente ad ottenere
+# l'MSE di test usando un modello di regressione tramite OLS
+mean((ridge.pred - y.test)^2) # 168588.6
+
+# Approfondimento:
+lm.fit <- lm(y ~ x, subset = train)
+lm.pred <- cbind(as.matrix(rep(1, nrow(x[test,])), ncol=1), x[test,] ) %*% coef(lm.fit)
+cbind(ridge = ridge.pred , lm.pred)[1:10,]
+#                          s1
+# -Alvin Davis       763.28869  763.28911
+# -Andre Dawson     1160.00033 1160.00098
+# -Andres Galarraga  521.82730  521.82598
+# -Alfredo Griffin   211.50308  211.48301
+# -Al Newman         404.23666  404.24314
+# -Argenis Salazar    77.66183   77.66343
+# -Andres Thomas     200.61342  200.62029
+# -Andre Thornton    990.57057  990.56405
+# -Alan Trammell    1112.75029 1112.76264
+# -Alex Trevino      193.57557  193.57015
+
+# Attraverso il comando coef applicato ad un oggetto di classe lm
+# si riportano in output i coefficienti del modello di regressione lineare
+coef(lm(y ~ x, subset = train))
+
+# Attraverso il comando predict associato ad un elemento di classe glmnet
+# e specificando type="coefficients" si ottengono i coefficienti del
+# modello ottenuto tramite Ridge regression. In questo caso specificando
+# exact = T e s = 0 (ovvero lambda = 0), quindi il termine di penalizzazione
+# è nullo, otteniamo i coefficienti del modello di regressione lineare
+predict(ridge.mod, s = 0, exact = T, type = "coefficients", x = x[train, ], y = y[train])[1:20, ]
+
+# Definiamo il seme per la riproducibilità dei risultati in quanto
+# verrà utilizzata la funzione cv.glmnet
+set.seed(1)
+
+# Si assegna all'oggetto cv.out l'output della funzione cv.glmnet, la quale
+# ci permette di effettuare una cross validazione per poter trovare il
+# valore di lambda che minimizza l'errore degli scarti al quadrato.
+# Passiamo come parametri della funzione la matrice dei regressori selezionando
+# i soli dati di train, la variabile di risposta per i soli dati di train
+# e alpha = 0 per trovare i coefficienti via Ridge Regression.
+# Per ogni valore di lambda scelto da una griglia di default dalla funzione
+# viene partizionato il dataset in k = 10 fold (di default) e per ogni lambda
+# e ogni k fold vengono stimati i beta tramite ridge utilizzando i dati di
+# tutte eccetto la k esima fold e valutando l'errore tra le previsioni
+# delle osservazioni della k-esima fold e le y osservate. Infine viene
+# fatta una media dei 10 errori per trovare l'errore medio per il lambda
+# in questione. Questa operazione viene fatta per ogni lambda all'interno
+# della griglia di valori (cv.out$lambda)
+?cv.glmnet
+cv.out <- cv.glmnet(x[train, ], y[train], alpha = 0)
+class(cv.out)
+names(cv.out)
+
+length(cv.out$lambda) # 100
+
+cv.out$lambda[1:10]
+# [1] 264495.8 240998.7 219589.1 200081.4 182306.7 166111.1 151354.2 137908.3
+# [9] 125656.9 114493.9
+
+# Attraverso il comando plot() associato ad un oggetto di classe cv.glmnet
+# otteniamo lo scatterplot che mostra l'andamento dell'MSE ottenuto via
+# cross validazione al variare dei valori di lambda. I pallini rossi indicano
+# la media degli MSE ottenuti nei 10 gruppi (per ogni lambda). La banda attorno
+# ai punti è data da +- standard error, ovvero l'incertezza associata alla
+# misura (MSE) per ogni valore di lambda
+plot(cv.out)
+
+# assegniamo all'oggetto bestlam il valore di lambda.min contenuto all'interno
+# dell'oggetto cv.out, corrispondente al valore di lambda che minimizza l'MSE
+# ottenuto via cross validazione
+bestlam <- cv.out$lambda.min
+bestlam # 326.0828
+
+# Assegniamo all'oggetto ridge.pred le previsioni utilizzando i coefficienti del
+# modello di ridge.mod, utilizzando il valore di lambda = 326.0828, per i valori
+# di test
+ridge.pred <- predict(ridge.mod, s = bestlam, newx = x[test, ]) 
+
+# Calcoliamo la media della somma degli errori al quadrato tra le previsioni e
+# i valori osservati di test. Come si può notare il valore è molto più basso
+# rispetto a quelli calcolati in precedenza
+mean((ridge.pred - y.test)^2)
+# 139856.6
+
+# Assegniamo all'oggetto out l'output della funzione glmnet, la quale ci
+# permette di stimare i coefficienti di un modello di regressione lineare
+# via Ridge Regression (utilizzando il parametro alpha = 0) e passando
+# come regressori la matrice dei dati x e come variabile di risposta y
+out <- glmnet(x, y, alpha = 0)
+
+# Attraverso il comando predict associato ad un oggetto di classe glmnet,
+# passando type = "coefficients" e s = bestlam (ovvero il lambda scelto
+# via cross validazione) otteniamo i primi 20 coefficienti del miglior modello
+# di regressione lineare scelto ottenuto via Ridge Regression
+predict(out, type = "coefficients", s = bestlam)[1:20, ]
 
 
 ###########
 ## LASSO ##
 ###########
+
+
+lasso.mod <- glmnet(x[train, ], y[train], alpha = 1, lambda = grid)
+plot(lasso.mod)
+
+set.seed(1)
+cv.out <- cv.glmnet(x[train, ], y[train], alpha = 1)
+plot(cv.out)
+
+
+bestlam <- cv.out$lambda.min
+lasso.pred <- predict(lasso.mod, s = bestlam,
+ newx = x[test, ])
+mean((lasso.pred - y.test)^2)
+
+
+out <- glmnet(x, y, alpha = 1, lambda = grid)
+lasso.coef <- predict(out, type = "coefficients",
+ s = bestlam)[1:20, ]
+lasso.coef
+
+
+lasso.coef[lasso.coef != 0]
+
+
 
 
 
