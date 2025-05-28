@@ -43,7 +43,7 @@ na.values <- rep(0,dim(Hitters)[2])
 # la colonna i-esima tramite la funzione names() la quale restituisce i nomi
 # delle colonne di Hitters, e viene selezionata l'i-esimo nome della colonna
 # del vettore contenente i nomi
-for (i in 1:dim(Hitters)[2]) {
+for (i in 1:dim(Hitters)[2]) { # nolint: seq_linter.
     name.values[i] <- names(Hitters)[i]
     na.values[i] <- sum(is.na(Hitters[names(Hitters)[i]]))
 }
@@ -658,7 +658,7 @@ set.seed(1)
 # metà del numero di righe di x contenente i numeri interi estratti
 # casualmente senza ripetizione dal vettore contenente i valori
 # da 1 al numero delle righe di x
-train <- sample(1:nrow(x), nrow(x) / 2)
+train <- sample(1:nrow(x), nrow(x) / 2) # nolint: seq_linter.
 train[1:5]
 
 # Assegno al vettore test i medesimi valori di train moltiplicati
@@ -931,8 +931,181 @@ lasso.coef[lasso.coef != 0]
 ## Principal Component Regression (PCR) ##
 ##########################################
 
+# Attraverso il comando library() viene caricata la libreria pls,
+# la quale contiene le funzioni utili per implementare la PCR
+library(pls)
+
+# Si definisce un seme per la riproducibilità dei risultati essendo
+# presente l'argomento validation = "CV" all'interno della funzione pcr()
+set.seed(2)
+
+# Si assegna all'oggetto pcr.fit l'output della funzione pcr() attraverso
+# la quale è possibile implementare una Principal Component Regression.
+# Vengono passati alla funzione la formula del modello, ovvero Salary come
+# variabile di risposta e le restanti variabili utilizzate come regressori,
+# il dataset Hitters, con scale = TRUE standardizziamo le variabili
+# prima di eseguire la PCR, infine l'argomento validation = "CV" permetterà
+# di riportare in output gli errori di previsione al variare del numero di
+# componenti principali considerate, via 10 k fold validation
+pcr.fit <- pcr(Salary ~ ., data = Hitters, scale = TRUE, validation = "CV")
+
+# Attraverso la funzione summary applicata ad un oggetto di classe pcr
+# riportiamo in output le principali informazioni contenute al suo interno,
+# in particolare il numero di componenti principali utilizzati, il valore
+# del MSEP (Mean Squared Error of Prediction), e la percentuale di varianza
+# spiegata per ciascuna componente principale.
+summary(pcr.fit)
+
+# Tramite la funzione validationplot(), visualizziamo graficamente l'errore
+# di previsione (MSEP) al variare del numero di componenti principali.
+# Questo consente di valutare quanti componenti principali includere nel modello
+# per ottimizzare la capacità predittiva, riducendo l'overfitting.
+validationplot(pcr.fit, val.type = "MSEP")
+
+# Si fissa il seme per garantire la riproducibilità dei risultati ottenuti
+# nella suddivisione del campione in training e test.
+set.seed(1)
+
+# Si assegna all'oggetto pcr.fit l'outpu della funzione pcr attraverso la quale
+# implementiamo nuovamente una Principal Component Regression, ma questa volta
+# utilizzando solamente il sottoinsieme di osservazioni specificato in train.
+# La standardizzazione e la validazione incrociata (CV) restano attive.
+pcr.fit <- pcr(Salary ~ ., data = Hitters, subset = train, scale = TRUE, validation = "CV")
+
+# Tramite la funzione validationplot(), visualizziamo graficamente l'errore
+# di previsione (MSEP) al variare del numero di componenti principali.
+# Questo consente di valutare quanti componenti principali includere nel modello
+# per ottimizzare la capacità predittiva, riducendo l'overfitting.
+validationplot(pcr.fit, val.type = "MSEP")
+
+# Si assegna alla funzione pcr.pred le previsioni utilizzando l'oggetto pcr.fit,
+# di classe pcr applicato su delle nuove osservazioni, ovvero le righe della
+# matrice x selezionate mediante il vettore test ed utilizzando soltanto le
+# prime 5 componenti principali per le stime
+pcr.pred <- predict(pcr.fit, x[test, ], ncomp = 5)
+
+# Attraverso il comando mean() calcolo la media degli scarti al quadrato tra
+# le previsioni ottenute tramite pcr utilizzando le prime 5 componenti
+# principali e i valori osservati per il dataset di test
+mean((pcr.pred - y.test)^2)
+# 126846.4
+
+# Si assegna all'oggetto pcr.fit l'output della funzione pcr implementata
+# su tutto il dataset (x), con il parametro scale = TRUE le colonne del
+# dataset vengono standardizzate ed infine si specifica il numero di
+# componenti principali da considerare scelte mediante validation set
+# approach in precedenza
+pcr.fit <- pcr(y ~ x, scale = TRUE, ncomp = 5)
+
+# Attraverso la funzione summary riportiamo in output alcune delle
+# informazioni dell'oggetto pcr.fit
+# Possiamo notare la dimensione del dataset, il numero di componenti
+# considerate (ovvero 5), il metodo utilizzato ovvero SVD e la 
+# percentuale di varianza spiegata cumulata dalla prima alla 5a
+# componente principale (prima riga, X), la seconda riga (y)
+# mostra l'R2 utilizzando da 1 a 5 componenti
+summary(pcr.fit)
+# Data:   X dimension: 263 19
+#         Y dimension: 263 1
+# Fit method: svdpc
+# Number of components considered: 5
+# TRAINING: % variance explained
+#    1 comps  2 comps  3 comps  4 comps  5 comps
+# X    38.31    60.16    70.84    79.03    84.29
+# y    40.63    41.58    42.17    43.22    44.90
+
 
 
 ############################################
 ## Partial Least Squares Regression (PLS) ##
 ############################################
+
+# Si definisce il seme per la riproducibilità del sottoinsieme di training
+set.seed(1)
+
+# Si assegna all'oggetto pls.fit l'output della funzione plsr(), attraverso la
+# quale è possibile implementare una Partial Least Squares Regression.
+# Vengono passati alla funzione:
+# - la formula del modello, ovvero Salary come variabile di risposta e le restanti
+#   variabili utilizzate come regressori
+# - il dataset Hitters con subset = train per usare solo il sottoinsieme di training
+# - scale = TRUE per standardizzare le variabili prima di eseguire la PLS
+# - validation = "CV" per eseguire una validazione incrociata (Cross Validation)
+#   e ottenere gli errori di previsione in funzione del numero di componenti
+pls.fit <- plsr(Salary ~ ., data = Hitters, subset = train, scale = TRUE, validation = "CV")
+
+# Attraverso la funzione summary applicata ad un oggetto di classe pls
+# riportiamo in output le principali informazioni contenute al suo interno,
+# tra cui:
+# - la dimensione della matrice X (numero di osservazioni e predittori)
+# - la dimensione di Y (variabile di risposta)
+# - il metodo utilizzato per la stima (PLS)
+# - la percentuale di varianza spiegata da ciascuna componente per X e Y,
+#   cumulata fino al numero massimo di componenti considerate
+summary(pls.fit)
+# Data:   X dimension: 131 19
+#         Y dimension: 131 1
+# Fit method: kernelpls
+# Number of components considered: 19
+# 
+# VALIDATION: RMSEP
+# Cross-validated using 10 random segments.
+#        (Intercept)  1 comps  2 comps  3 comps  4 comps  5 comps  6 comps
+# CV           428.3    326.9    326.4    325.7    329.6    330.5    336.4
+# adjCV        428.3    326.2    324.9    324.0    327.7    328.4    333.4
+#        7 comps  8 comps  9 comps  10 comps  11 comps  12 comps  13 comps
+# CV       335.3    348.5    348.5     343.5     340.4     341.7     341.8
+# adjCV    332.7    344.5    344.5     340.1     337.2     338.3     337.4
+#        14 comps  15 comps  16 comps  17 comps  18 comps  19 comps
+# CV        342.3       346     349.0     343.1     341.9     342.6
+# adjCV     338.6       342     344.7     339.2     338.2     338.9
+# 
+# TRAINING: % variance explained
+#         1 comps  2 comps  3 comps  4 comps  5 comps  6 comps  7 comps  8 comps
+# X         39.13    48.80    60.09    75.07    78.58    81.12    88.21    90.71
+# Salary    46.36    50.72    52.23    53.03    54.07    54.77    55.05    55.66
+#         9 comps  10 comps  11 comps  12 comps  13 comps  14 comps  15 comps
+# X         93.17     96.05     97.08     97.61     97.97     98.70     99.12
+# Salary    55.95     56.12     56.47     56.68     57.37     57.76     58.08
+#         16 comps  17 comps  18 comps  19 comps
+# X          99.61     99.70     99.95    100.00
+# Salary     58.17     58.49     58.56     58.62
+
+
+# Si utilizza la funzione validationplot() per visualizzare graficamente
+# l'andamento del Mean Squared Error of Prediction (MSEP) al variare del
+# numero di componenti principali. Questo consente di identificare il numero
+# ottimale di componenti da usare per minimizzare l'errore di previsione.
+validationplot(pls.fit, val.type = "MSEP")
+
+# Si assegnano a pls.pred le previsioni ottenute tramite il modello pls.fit
+# applicato ai dati di test (x[test, ]) utilizzando soltanto la prima componente
+# principale (ncomp = 1), scelta in base ai risultati della validazione.
+pls.pred <- predict(pls.fit, x[test, ], ncomp = 1)
+
+# Si calcola l’errore quadratico medio tra le previsioni ottenute e i valori
+# osservati della variabile Salary nel dataset di test.
+# Questo permette di valutare la performance predittiva del modello.
+mean((pls.pred - y.test)^2)
+# 151995.3
+
+# Si ricalibra un modello pls su tutto il dataset Hitters (senza distinzione
+# tra training e test), utilizzando scale = TRUE per standardizzare le variabili
+# e specificando direttamente ncomp = 1 per usare una sola componente.
+# Questa operazione è utile se si desidera ottenere un modello finale
+# da utilizzare
+pls.fit <- plsr(Salary ~ ., data = Hitters, scale = TRUE, ncomp = 1)
+
+# Attraverso summary si riporta in output la percentuale di varianza spiegata
+# sia per X sia per Y, utilizzando una sola componente. Ciò consente di
+# valutare quanto efficacemente la componente scelta riesce a riassumere
+# l’informazione presente nei dati.
+summary(pls.fit)
+# Data:   X dimension: 263 19
+#         Y dimension: 263 1
+# Fit method: kernelpls
+# Number of components considered: 1
+# TRAINING: % variance explained
+#         1 comps
+# X         38.08
+# Salary    43.05
