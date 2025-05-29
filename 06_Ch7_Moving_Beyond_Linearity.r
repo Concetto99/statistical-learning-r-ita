@@ -1,0 +1,452 @@
+############################################
+#### [322] 7.8 Lab: Non-linear Modeling ####
+############################################
+
+# Creazione directory per salvare i grafici
+
+if (!dir.exists("img")) {
+  dir.create("img")
+}
+
+if (!dir.exists("img/06_Ch7_Moving_Beyond_Linearity")) {
+  dir.create("img/06_Ch7_Moving_Beyond_Linearity")
+}
+
+img_path = "img/06_Ch7_Moving_Beyond_Linearity"
+
+remove(list = ls())
+
+# Attraverso il comando library() carichiamo il pacchetto ISLR,
+# il quale contiene vari dataset e funzioni utili.
+library(ISLR)
+
+# Attraverso il comando attach rendiamo direttamente disponibili
+# le variabili del dataset Wage all'interno del global environment
+attach(Wage)
+
+# Attraverso il comando head() riportiamo in output le prime 6 righe
+# del dataset Wage
+head(Wage)
+
+# Attraverso il comando summary() applicato ad un ogetto di tipo
+# data frame riportiamo in output le principali informazioni delle
+# colonne di Wage, per le variabili qualitative le frequenze assolute
+# di classe, per le quantitative min, max, media, 1,2,3 quartile
+summary(Wage)
+
+# Attraverso la funzione pairs() stampiamo il grafico contenente una
+# matrice di scatterplot tra tutte le colonne di Wage
+pairs(Wage)
+
+
+##############################################
+## Polynomial Regression and Step Functions ##
+##############################################
+
+## Polynomial Regression
+
+# Assegniamo all'oggetto fit l'output della funzione lm() attraverso
+# la quale stimiamo i coefficienti di un modello di regressione
+# polinomiale in cui la variabile di risposta è wage e come regressori
+# le colonne di una matrice le quali costituiscono una base di polinomi
+# ortogonali, tramite la funzione poly(), di default, otteniamo una base
+# equivalente della colonne della variabile age dal 1 al 4 grado,
+# il dataset di riferimento è il dataset Wage contenuto in ISRL2
+fit <- lm(wage ~ poly(age, 4), data = Wage)
+
+# Attraverso la funzione coef() applicata al summary() dell'oggetto fit
+# riportiamo in output la matrice contenente le stime dei coefficienti ottenuti
+# stimando un modello di regressione polinomiale, gli standard error,
+# t value e p value associati alle stime
+coef(summary(fit))
+#                 Estimate Std. Error    t value     Pr(>|t|)
+# (Intercept)    111.70361  0.7287409 153.283015 0.000000e+00
+# poly(age, 4)1  447.06785 39.9147851  11.200558 1.484604e-28
+# poly(age, 4)2 -478.31581 39.9147851 -11.983424 2.355831e-32
+# poly(age, 4)3  125.52169 39.9147851   3.144742 1.678622e-03
+# poly(age, 4)4  -77.91118 39.9147851  -1.951938 5.103865e-02
+
+# Si assegna all'oggetto fit2 l'output della funzione lm attraverso la quale
+# implementa una regressione polinomiale in cui la variabile risposta è wage
+# e i regressori del modello sono le colonne contenenti la variabile age dal
+# primo al quarto grado ottenute tramite coercizione usando la funzione poly(),
+# passando il parametro raw = T vengono restituite esattamente le colonne
+# age, age^2, age^3 e age^4
+fit2 <- lm(wage ~ poly(age, 4, raw = T), data = Wage)
+
+# Attraverso la funzione coef() applicata al summary() dell'oggetto fit2
+# riportiamo in output la matrice contenente le stime dei coefficienti ottenuti
+# stimando un modello di regressione polinomiale, gli standard error,
+# t value e p value associati alle stime
+coef(summary(fit2))
+#                             Estimate   Std. Error   t value     Pr(>|t|)
+# (Intercept)            -1.841542e+02 6.004038e+01 -3.067172 0.0021802539
+# poly(age, 4, raw = T)1  2.124552e+01 5.886748e+00  3.609042 0.0003123618
+# poly(age, 4, raw = T)2 -5.638593e-01 2.061083e-01 -2.735743 0.0062606446
+# poly(age, 4, raw = T)3  6.810688e-03 3.065931e-03  2.221409 0.0263977518
+# poly(age, 4, raw = T)4 -3.203830e-05 1.641359e-05 -1.951938 0.0510386498
+
+# Equivalentemente al fit2, in questo caso passiamo i regressori
+# utilizzando la funzione I() attraverso la quale posiamo passare
+# direttamente all'interno della funzione dei vettori senza doverli
+# salvare in degli oggetti in anticipo
+fit2a <- lm(wage ~ age + I(age^2) + I(age^3) + I(age^4), data = Wage)
+coef(fit2a)
+
+# Alternativamente è possibile utilizzare la funzione cbind() la quale
+# crea una matrice contenente le colonne age, age^2, age^3 e age^4
+fit2b <- lm(wage ~ cbind(age, age^2, age^3, age^4), data = Wage)
+
+# Assegniamo all'oggetto agelims il vettore contenente il valore minimo e
+# massimo della variabile age
+agelims <- range(age)
+agelims # 18 80
+
+# Assegniamo alla variabile age.grid un vettore avente come primo valore
+# agelims[1] e di seguito tutti i possibili valori tra agelims[1] e
+# agelims[2] con un passo di 1.
+# In questo caso avremo un vettore del tipo (18, 19, 20, 21, ..., 79, 80)
+age.grid <- seq(from = agelims[1], to = agelims[2])
+age.grid
+
+# Altri esempi:
+seq(2.6, 12.2)
+# 2.6  3.6  4.6  5.6  6.6  7.6  8.6  9.6 10.6 11.6
+seq(2.2, 12.2)
+# 2.2  3.2  4.2  5.2  6.2  7.2  8.2  9.2 10.2 11.2 12.2
+seq(2.2, 3.1)
+# 2.2
+
+# Assegno all'oggetto preds il vettore delle previsioni per le nuove
+# osservazioni passate tramite il parametro newdata, ovvero la lista
+# contenente la variabile age a cui assegniamo il vettore age.grid
+# creato in precedenza. Con il parametro se = TRUE facciamo in modo che
+# l'output della funzione contenga anche i valori dello standard error
+# per ogni osservazione al fine di poter costruire un intervallo di
+# previsione in seguito
+preds <- predict(fit, newdata = list(age = age.grid), se = TRUE)
+
+# Assegniamo all'oggetto se.bands una matrice con 2 colonne, le quali
+# contengono i vettori formati dalle previsioni + 2 volte lo standard
+# error associato alla i-esima previsione e -2 volte lo standard
+# error associato alla i-esima previsione
+se.bands <- cbind(preds$fit + 2 * preds$se.fit, preds$fit - 2 * preds$se.fit)
+
+# Attraverso la funzione plot() stampiamo il grafico della nuvola dei punti
+# in cui nell'asse delle ascisse è rappresentata la varabile age e nelle
+# ordinate la variabile wage, con cex assegniamo la grandezza dei punti e
+# con col il colore.
+# successivamente aggiungiamo il titolo al grafico con title()
+# Aggiungiamo la curva interpolante i punti nello spazio definito
+# dai vettori age.grid (ascisse) e preds.fit (ordinate), spessore = 2
+# e di colore blu. Infine aggiungiamo le curve tratteggiate (lty) con
+# il comando matlines, di spessore 1 e anch'esse di colore blu 
+par(mfrow = c(1, 1), mar = c(4.5, 4.5, 1, 1), oma = c(0, 0, 4, 0))
+png(paste(img_path, "/01_Degree-4_Polynomial.png", sep=""), width = 800, height = 600)
+plot(age, wage, xlim = agelims, cex = .5, col = "darkgrey")
+title("Degree-4 Polynomial")
+lines(age.grid, preds$fit, lwd = 2, col = "blue")
+matlines(age.grid, se.bands, lwd = 1, col = "blue", lty = 3)
+dev.off()
+
+# Per dimostrare che otteniamo le medesime previsioni nonostante i
+# coefficienti siano differenti in quanto nel secondo caso le variabili
+# non erano una base ortogonale assegniamo a preds le previsioni ottenute
+# utilizzando gli stessi dati ma il secondo modello di regressione
+# polinomiale
+preds2 <- predict(fit2, newdata = list(age = age.grid), se = TRUE)
+
+# Il comando max() restituisce in output il valore massimo del vettore
+# delle differenze in valore assoluto tra le previsioni ottenute sulla
+# griglia di valori utilizzando il primo e il secondo modello 
+max(abs(preds$fit - preds2$fit)) # 6.842527e-11
+# è sostanzialmente uno zero di macchina
+
+# Assegniamo agli oggetti fit.1 ... fit.5 l'output della funzione lm()
+# attraverso la quale si stima un modello di regressione polinomiale
+# in cui la variabile di risposta è wage e le varaibili indipendenti
+# sono rispettivamente i polinomi dal grado uno (lineare) al 5o
+fit.1 <- lm(wage ~ age, data = Wage)
+fit.2 <- lm(wage ~ poly(age, 2), data = Wage)
+fit.3 <- lm(wage ~ poly(age, 3), data = Wage)
+fit.4 <- lm(wage ~ poly(age, 4), data = Wage)
+fit.5 <- lm(wage ~ poly(age, 5), data = Wage)
+
+# Si utilizza la funzione anova() per confrontare i modelli polinomiali stimati.
+# L'ANOVA sequenziale confronta ogni modello con il precedente e verifica
+# se l'aggiunta del termine polinomiale successivo migliora significativamente
+# il fit del modello. In output si ottiene una tabella con:
+# - la Df (variazione dei gradi di libertà),
+# - la somma dei quadrati residui (RSS),
+# - il valore di F e il relativo p-value.
+# Un p-value piccolo indica che il termine aggiunto migliora il modello.
+anova(fit.1, fit.2, fit.3, fit.4, fit.5)
+# Analysis of Variance Table
+#
+# Model 1: wage ~ age
+# Model 2: wage ~ poly(age, 2)
+# Model 3: wage ~ poly(age, 3)
+# Model 4: wage ~ poly(age, 4)
+# Model 5: wage ~ poly(age, 5)
+#   Res.Df     RSS Df Sum of Sq        F    Pr(>F)
+# 1   2998 5022216
+# 2   2997 4793430  1    228786 143.5931 < 2.2e-16 ***
+# 3   2996 4777674  1     15756   9.8888  0.001679 **
+# 4   2995 4771604  1      6070   3.8098  0.051046 .
+# 5   2994 4770322  1      1283   0.8050  0.369682
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+# Si utilizza la funzione coef() applicata all'output di summary(fit.5)
+# per ottenere la tabella dei coefficienti stimati dal modello polinomiale
+# di grado 5. La tabella riporta:
+# - gli stimatori dei coefficienti (Estimate),
+# - gli errori standard (Std. Error),
+# - i valori t (t value) calcolati come Estimate / Std. Error,
+# - i p-value associati a ciascun test t, che misurano la significatività
+#   individuale di ciascun coefficiente nel modello.
+# I nomi dei coefficienti seguono la codifica ortogonale usata da poly().
+coef(summary(fit.5))
+#                 Estimate Std. Error     t value     Pr(>|t|)
+# (Intercept)    111.70361  0.7287647 153.2780243 0.000000e+00
+# poly(age, 5)1  447.06785 39.9160847  11.2001930 1.491111e-28
+# poly(age, 5)2 -478.31581 39.9160847 -11.9830341 2.367734e-32
+# poly(age, 5)3  125.52169 39.9160847   3.1446392 1.679213e-03
+# poly(age, 5)4  -77.91118 39.9160847  -1.9518743 5.104623e-02
+# poly(age, 5)5  -35.81289 39.9160847  -0.8972045 3.696820e-01
+
+# Si calcola il quadrato del valore t del secondo termine polinomiale
+# di fit.5, ovvero (-11.983)^2, per ottenere il corrispondente valore
+# della statistica F nel caso in cui si stesse testando solo quella
+# variabile in un modello semplice
+(-11.983)^2
+# 143.592089
+
+# Si stima un modello lineare multivariato in cui il salario (wage) è
+# spiegato dalle variabili education (qualifica/istruzione) e age (età)
+fit.1 <- lm(wage ~ education + age, data = Wage)
+
+# Si stima un secondo modello includendo education e sostituendo age con
+# un polinomio di grado 2 per modellare una relazione non lineare tra età
+# e salario
+fit.2 <- lm(wage ~ education + poly(age, 2), data = Wage)
+
+# Si stima un terzo modello includendo education e un polinomio
+# di grado 3 per age
+fit.3 <- lm(wage ~ education + poly(age, 3), data = Wage)
+
+# Si utilizza la funzione anova() per confrontare i tre modelli specificati.
+# L’output mostra come ogni aggiunta di complessità (passaggio da lineare
+# a quadratico, poi a cubico) migliori la qualità del fit. Viene riportato:
+# - RSS (residual sum of squares) residua,
+# - la variazione della devianza (Sum of Sq),
+# - il test F per ogni confronto successivo,
+# - i p-value per testare se la complessità aggiunta è significativa.
+anova(fit.1, fit.2, fit.3)
+# Analysis of Variance Table
+#
+# Model 1: wage ~ education + age
+# Model 2: wage ~ education + poly(age, 2)
+# Model 3: wage ~ education + poly(age, 3)
+#   Res.Df     RSS Df Sum of Sq        F Pr(>F)
+# 1   2994 3867992
+# 2   2993 3725395  1    142597 114.6969 <2e-16 ***
+# 3   2992 3719809  1      5587   4.4936 0.0341 *
+
+
+
+## Step function
+
+#
+fit <- glm(I(wage > 250) ~ poly(age, 4), data = Wage, family = binomial)
+
+#
+preds <- predict(fit, newdata = list(age = age.grid), se = T)
+
+#
+pfit <- exp(preds$fit) / (1 + exp(preds$fit))
+
+#
+se.bands.logit <- cbind(preds$fit + 2 * preds$se.fit, preds$fit - 2 * preds$se.fit)
+
+#
+se.bands <- exp(se.bands.logit) / (1 + exp(se.bands.logit))
+
+#
+predict(fit, newdata = list(age = age.grid), type = "response", se = T)
+
+#
+plot(age, I(wage > 250), xlim = agelims, type = "n", ylim = c(0, .2))
+points(jitter(age), I((wage > 250) / 5), cex = .5, pch = "|", col = "darkgrey")
+lines(age.grid, pfit, lwd = 2, col = "blue")
+matlines(age.grid, se.bands, lwd = 1, col = "blue", lty = 3)
+
+#
+table(cut(age, 4))
+
+#
+fit <- lm(wage ~ cut(age, 4), data = Wage)
+
+#
+coef(summary(fit))
+
+
+
+###################
+## Basis Splines ##
+###################
+
+#
+library(splines)
+
+#
+fit <- lm(wage ~ bs(age, knots = c(25, 40, 60)), data = Wage)
+
+#
+pred <- predict(fit, newdata = list(age = age.grid), se = T)
+
+#
+plot(age, wage, col = "gray")
+lines(age.grid, pred$fit, lwd = 2)
+lines(age.grid, pred$fit + 2 * pred$se, lty = "dashed")
+lines(age.grid, pred$fit - 2 * pred$se, lty = "dashed")
+
+#
+dim(bs(age, knots = c(25, 40, 60)))
+
+#
+dim(bs(age, df = 6))
+
+#
+attr(bs(age, df = 6), "knots")
+
+
+
+#####################
+## Natural Splines ##
+#####################
+
+#
+fit2 <- lm(wage ~ ns(age, df = 4), data = Wage)
+
+#
+pred2 <- predict(fit2, newdata = list(age = age.grid), se = T)
+
+#
+plot(age, wage, col = "gray")
+lines(age.grid, pred2$fit, col = "red", lwd = 2)
+
+
+
+#######################
+## Smoothing Splines ##
+#######################
+
+
+
+#
+fit <- smooth.spline(age, wage, df = 16)
+
+#
+fit2 <- smooth.spline(age, wage, cv = TRUE)
+
+#
+fit2$df
+
+#
+plot(age, wage, xlim = agelims, cex = .5, col = "darkgrey")
+title("Smoothing Spline")
+lines(fit, col = "red", lwd = 2)
+lines(fit2, col = "blue", lwd = 2)
+legend("topright", legend = c("16 DF", "6.8 DF"), col = c("red", "blue"), lty = 1, lwd = 2, cex = .8)
+
+
+
+###########
+## LOESS ##
+###########
+
+
+#
+fit <- loess(wage ~ age, span = .2, data = Wage)
+
+#
+fit2 <- loess(wage ~ age, span = .5, data = Wage)
+
+#
+plot(age, wage, xlim = agelims, cex = .5, col = "darkgrey")
+title("Local Regression")
+lines(age.grid, predict(fit, data.frame(age = age.grid)), col = "red", lwd = 2)
+lines(age.grid, predict(fit2, data.frame(age = age.grid)), col = "blue", lwd = 2)
+legend("topright", legend = c("Span = 0.2", "Span = 0.5"), col = c("red", "blue"), lty = 1, lwd = 2, cex = .8)
+
+
+
+#########
+## GAM ##
+#########
+
+#
+gam1 <- lm(wage ~ ns(year, 4) + ns(age, 5) + education, data = Wage)
+
+#
+library(gam)
+
+#
+gam.m3 <- gam(wage ~ s(year, 4) + s(age, 5) + education, data = Wage)
+
+
+#
+par(mfrow = c(1, 3))
+plot(gam.m3, se = TRUE, col = "blue")
+
+#
+plot.Gam(gam1, se = TRUE, col = "red")
+
+#
+gam.m1 <- gam(wage ~ s(age, 5) + education, data = Wage)
+gam.m2 <- gam(wage ~ year + s(age, 5) + education, data = Wage)
+
+#
+anova(gam.m1, gam.m2, gam.m3, test = "F")
+
+#
+summary(gam.m3)
+
+#
+preds <- predict(gam.m2, newdata = Wage)
+
+#
+gam.lo <- gam(
+ wage ~ s(year, df = 4) + lo(age, span = 0.7) + education,
+ data = Wage
+ )
+
+#
+plot(gam.lo, se = TRUE, col = "green")
+
+#
+gam.lo.i <- gam(wage ~ lo(year, age, span = 0.5) + education, data = Wage)
+
+#
+library(akima)
+
+#
+plot(gam.lo.i)
+
+gam.lr <- gam(
+ I(wage > 250) ~ year + s(age, df = 5) + education,
+ family = binomial, data = Wage
+ )
+par(mfrow = c(1, 3))
+plot(gam.lr, se = T, col = "green")
+
+table(education, I(wage > 250))
+
+
+gam.lr.s <- gam(
+ I(wage > 250) ~ year + s(age, df = 5) + education,
+ family = binomial, data = Wage,
+ subset = (education != "1. < HS Grad")
+ )
+plot(gam.lr.s, se = T, col = "green")
+
