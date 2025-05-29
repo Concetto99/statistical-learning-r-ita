@@ -2,6 +2,17 @@
 #### [121] 3.6 Linear Regression ####
 #####################################
 
+# Creazione directory per salvare i grafici
+
+if (!dir.exists("img")) {
+  dir.create("img")
+}
+
+if (!dir.exists("img/02_Ch3_Linear_Regression")) {
+  dir.create("img/02_Ch3_Linear_Regression")
+}
+img_path = "img/02_Ch3_Linear_Regression"
+
 remove(list = ls())
 
 # Attraverso il comando library() carichiamo i pacchetti MASS e ISLR2.

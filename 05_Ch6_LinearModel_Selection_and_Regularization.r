@@ -2,6 +2,18 @@
 #### [278] 6.5 Lab: Linear Models and Regularization Methods ####
 #################################################################
 
+# Creazione directory per salvare i grafici
+
+if (!dir.exists("img")) {
+  dir.create("img")
+}
+
+if (!dir.exists("img/05_Ch6_LinearModel_Selection_and_Regularization")) {
+  dir.create("img/05_Ch6_LinearModel_Selection_and_Regularization")
+}
+
+img_path = "img/05_Ch6_LinearModel_Selection_and_Regularization"
+
 remove(list = ls())
 
 # Attraverso il comando library() carichiamo il pacchetto ISLR,

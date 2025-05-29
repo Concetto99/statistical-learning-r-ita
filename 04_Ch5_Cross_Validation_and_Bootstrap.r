@@ -2,6 +2,18 @@
 #### [223] 5.3 Lab: Cross-Validation and the Bootstrap ####
 ###########################################################
 
+# Creazione directory per salvare i grafici
+
+if (!dir.exists("img")) {
+  dir.create("img")
+}
+
+if (!dir.exists("img/04_Ch5_Cross_Validation_and_Bootstrap")) {
+  dir.create("img/04_Ch5_Cross_Validation_and_Bootstrap")
+}
+
+img_path = "img/04_Ch5_Cross_Validation_and_Bootstrap"
+
 remove(list = ls())
 
 # install.packages("boot")

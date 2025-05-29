@@ -2,6 +2,18 @@
 #### [182] 4.7 Lab: Classifcation Methods ####
 ##############################################
 
+# Creazione directory per salvare i grafici
+
+if (!dir.exists("img")) {
+  dir.create("img")
+}
+
+if (!dir.exists("img/03_Ch4_Classification")) {
+  dir.create("img/03_Ch4_Classification")
+}
+
+img_path = "img/03_Ch4_Classification"
+
 remove(list = ls())
 
 # Attraverso il comando library() carichiamo il pacchetto ISLR2,
