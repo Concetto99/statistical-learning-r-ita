@@ -370,33 +370,63 @@ dev.off()
 ## Regression Splines ##
 ########################
 
-#
+# Attraverso il comando library() carichiamo il pacchetto splines
 library(splines)
 
-#
-fit <- lm(wage ~ bs(age, knots = c(25, 40, 60)), data = Wage) # default gradi polinomio = 3
-# Teoria - gradi di libertà: (K + d + 1) =
-# Nodi + Gradi polinomio + 1 = (3 + 3 + 1) = 7
+# Si assegna all'oggetto fit l'output della funzione lm() con cui si
+# implementa una regression spline utilizzando la funzione bs() del pacchetto
+# splines.
+# La variabile di risposta è wage, mentre il regressore age viene trasformato
+# in una base di spline cubiche con 3 nodi posizionati ai valori 25, 40 e 60.
+# Il grado del polinomio utilizzato per costruire la spline è 3 (default).
+# Secondo la teoria, il numero di gradi di libertà della spline è dato da:
+# df = numero nodi + grado del polinomio + 1 = 3 + 3 + 1 = 7
+# Tuttavia, bs() non include l'intercetta nella matrice di base, poiché è già
+# presente nella formula lm(). Di conseguenza, vengono generate 6 variabili (colonne)
+fit <- lm(wage ~ bs(age, knots = c(25, 40, 60)), data = Wage)  # default: grado = 3
 
-#
+# Si assegna all'oggetto pred la lista composta dalle previsioni
+# per la griglia di valori di age, age.grid utilizzando l'oggetto
+# fit salvato in precedenza. Inoltre con se = T, la funzione restituisce
+# anche il vettore degli standard error associati alle stime.
 pred <- predict(fit, newdata = list(age = age.grid), se = T)
 
-#
+# Per salvare il grafico
+png(paste(img_path, "/04_Regression_Splines_3-Degree_3-Knots.png", sep=""), width = 800, height = 600)
+
+# Attraverso il comando plot() riporto in output il grafico avente nell'asse
+# delle ascisse la variabile Age, Mentre nell'asse delle ordinate la variabile
+# wage.
+# Aggiungiamo inoltre le curve, nel primo caso interpolante tutti i punti
+# del piano con coordinate [age.grid, pred$fit] quindi la curva stimata e
+# successivamente le 2 curve interpolanti i punti con +- 2 volte lo standard error
 plot(age, wage, col = "gray")
 lines(age.grid, pred$fit, lwd = 2)
 lines(age.grid, pred$fit + 2 * pred$se, lty = "dashed")
 lines(age.grid, pred$fit - 2 * pred$se, lty = "dashed")
+title("Regression Spline")
+dev.off()
 
-#
+# Attraverso la funzione dim() riportiamo in output l'oggetto ottenuto
+# tramite la funzione bs() al quale passiamo come parametri la variabile
+# age e i 3 nodi
 dim(bs(age, knots = c(25, 40, 60)))
 # 3000    6
 
-#
+# Attraverso la funzione dim() riportiamo in output l'oggetto ottenuto
+# tramite la funzione bs() al quale passiamo come parametri la variabile
+# age e i gradi di libertà, df = 6, per cui verranno analogamente al caso
+# precedente create 6 variabili (l'intercetta non viene considerata) ma
+# in questo caso i nodi vengono messi di default utilizzando i quartili
+# di Age
 dim(bs(age, df = 6))
 # 3000    6
 
-#
+# Attraverso la funzione attr() applicata sulla funzione bs() con parametri
+# age e df = 6, alla quale passiamo l'attributo "knots" riportiamo in output
+# i nodi di default della funzione, ovvero i quartili di Age
 attr(bs(age, df = 6), "knots")
+# 33.75 42.00 51.00
 
 
 
