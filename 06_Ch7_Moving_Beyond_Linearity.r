@@ -50,7 +50,7 @@ pairs(Wage)
 # polinomiale in cui la variabile di risposta è wage e come regressori
 # le colonne di una matrice le quali costituiscono una base di polinomi
 # ortogonali, tramite la funzione poly(), di default, otteniamo una base
-# equivalente della colonne della variabile age dal 1 al 4 grado,
+# equivalente delle colonne della variabile age dal 1 al 4 grado,
 # il dataset di riferimento è il dataset Wage contenuto in ISRL2
 fit <- lm(wage ~ poly(age, 4), data = Wage)
 
@@ -117,12 +117,13 @@ seq(2.2, 12.2)
 seq(2.2, 3.1)
 # 2.2
 
-# Assegno all'oggetto preds il vettore delle previsioni per le nuove
+# Assegno all'oggetto preds la lista (perchè ci sono più attributi dato
+# il parametro se = TRUE) delle previsioni per le nuove
 # osservazioni passate tramite il parametro newdata, ovvero la lista
 # contenente la variabile age a cui assegniamo il vettore age.grid
 # creato in precedenza. Con il parametro se = TRUE facciamo in modo che
 # l'output della funzione contenga anche i valori dello standard error
-# per ogni osservazione al fine di poter costruire un intervallo di
+# per ogni previsione al fine di poter costruire un intervallo di
 # previsione in seguito
 preds <- predict(fit, newdata = list(age = age.grid), se = TRUE)
 
@@ -173,9 +174,12 @@ fit.4 <- lm(wage ~ poly(age, 4), data = Wage)
 fit.5 <- lm(wage ~ poly(age, 5), data = Wage)
 
 # Si utilizza la funzione anova() per confrontare i modelli polinomiali stimati.
-# L'ANOVA sequenziale confronta ogni modello con il precedente e verifica
-# se l'aggiunta del termine polinomiale successivo migliora significativamente
-# il fit del modello. In output si ottiene una tabella con:
+# Attraverso questo comando è possibile confrontare ogni modello con il
+# precedente e viene verificato se l'aggiunta del termine polinomiale successivo
+# migliora significativamente il fit del modello.
+# Dunque, si esegue un test F, ovvero un test sulla nullità di una parte dei
+# coefficienti.
+# In output si ottiene una tabella con:
 # - la Df (variazione dei gradi di libertà),
 # - la somma dei quadrati residui (RSS),
 # - il valore di F e il relativo p-value.
@@ -196,6 +200,7 @@ anova(fit.1, fit.2, fit.3, fit.4, fit.5)
 # 5   2994 4770322  1      1283   0.8050  0.369682
 # ---
 # Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
 # Si utilizza la funzione coef() applicata all'output di summary(fit.5)
 # per ottenere la tabella dei coefficienti stimati dal modello polinomiale
 # di grado 5. La tabella riporta:
@@ -254,52 +259,124 @@ anova(fit.1, fit.2, fit.3)
 
 
 
-## Step function
+## Regressione Logistica Polinomiale
 
-#
+# Si assegna all'oggetto fit l'output della funzione glm() attraverso la
+# quale viene implementata una Regressione Logistica Polinomiale, in cui
+# la variabile di risposta viene creata direttamente all'interno della
+# funzione attraverso la funzione I() ed è una variabile dummy che assume
+# TRUE se la condizione wage > 250 viene soddisfatta, FALSE altrimenti.
+# Le variabili di risposta sono le colonne ottenute tramite la funzione poly(),
+# per cui di default, otteniamo una base equivalente delle colonne della
+# variabile age dal 1 al 4 grado.
 fit <- glm(I(wage > 250) ~ poly(age, 4), data = Wage, family = binomial)
 
-#
+# Assegniamo all'oggetto preds la lista contenente le previsioni per le
+# nuove osservazioni contenute nella lista passata al parametro newdata
+# e lo standard error associato alla stima utilizzando il modello salvato
+# precendetemente in fit
 preds <- predict(fit, newdata = list(age = age.grid), se = T)
+preds$fit[1:10]
 
-#
+# Assegniamo all'oggetto pfit il vettore costituito per ogni elemento
+# da e elevato alla previsione i-esima su 1 + e elevato alla previsione
+# i-esima. Questo valore conterrà le probabilità a posteriori calcolate
+# sui nuovi dati
 pfit <- exp(preds$fit) / (1 + exp(preds$fit))
+pfit[1:10]
 
-#
+# o equivalentemente usiamo type = "response"
+predict(fit, newdata = list(age = age.grid), type = "response", se = T)$fit[1:10]
+
+# Assegniamo all'oggetto se.bands.logit una matrice con 2 colonne, le quali
+# contengono i vettori formati dalle previsioni + 2 volte lo standard
+# error associato alla i-esima previsione e -2 volte lo standard
+# error associato alla i-esima previsione
 se.bands.logit <- cbind(preds$fit + 2 * preds$se.fit, preds$fit - 2 * preds$se.fit)
 
-#
+# Assegniamo all'oggetto se.bands una matrice con 2 colonne, le quali
+# contengono i vettori formati dalle proabilità condizionate + 2 volte
+# lo standard error associato alla i-esima probabilità condizionata
+# e -2 volte lo standard error associato alla i-esima probabilità condizionata
 se.bands <- exp(se.bands.logit) / (1 + exp(se.bands.logit))
 
-#
-predict(fit, newdata = list(age = age.grid), type = "response", se = T)
 
-#
+
+# Attraverso il comando plot() riporto in output il grafico avente nell'asse
+# delle ascisse la variabile Age, Mentre nell'asse delle ordinate la variabile
+# dummy create mediante coercizione con I(Wage > 50) con valori negli assi x e y
+# rispettivamente pari al supporto del vettore agelims e nel secondo caso da 0 a 0.2
+# Si arricchisce il grafico con la funzione points() in modo da disegnare i punti
+# con rumore assegnato tramite jitters() per age e per i valori della variabile
+# dummy trasformata da 0 - 1 a 0 - 0.2.
+# Aggiungiamo inoltre le curve, nel primo caso interpolante tutti i punti
+# del piano con coordinate [age.grid, pfit] quindi la curva stimata e
+# successivamente utilizzando matlines() le 2 curve interpolanti i punti con
+# +- 2 volte lo standard error
+png(paste(img_path, "/02_Regressione_Logistica_Polinomiale.png", sep=""), width = 800, height = 600)
 plot(age, I(wage > 250), xlim = agelims, type = "n", ylim = c(0, .2))
 points(jitter(age), I((wage > 250) / 5), cex = .5, pch = "|", col = "darkgrey")
 lines(age.grid, pfit, lwd = 2, col = "blue")
 matlines(age.grid, se.bands, lwd = 1, col = "blue", lty = 3)
+dev.off()
 
-#
+
+## Step Function
+
+# La funzione table() applicata al risultato di cut(age, 4) restituisce
+# una tabella con il conteggio degli individui che ricadono in ciascuno
+# dei 4 intervalli costruiti automaticamente dalla funzione cut() sulla
+# base del range di età (age). Gli intervalli sono equidistanti e non
+# sovrapposti. Ogni osservazione di età viene assegnata a un intervallo.
 table(cut(age, 4))
+# (17.9,33.5]   (33.5,49]   (49,64.5] (64.5,80.1]
+#         750        1399         779          72
 
-#
+# Si stima un modello lineare in cui la variabile age è suddivisa in 4
+# classi tramite la funzione cut(). Il modello avrà un'intercetta per
+# la prima classe e un coefficiente (effetto fisso) per ciascuna delle
+# classi successive. Questo permette di stimare una funzione a gradini
+# (step function), in cui ogni classe ha un salario medio distinto.
 fit <- lm(wage ~ cut(age, 4), data = Wage)
 
-#
+# Con la funzione coef(summary(fit)) si riportano i coefficienti stimati
+# del modello, insieme agli errori standard, valori t e p-value.
+# L’intercetta rappresenta il salario medio previsto per il primo gruppo
+# (età tra 17.9 e 33.5), mentre i coefficienti additivi rappresentano le
+# differenze di salario medio rispetto al primo gruppo per le altre fasce.
 coef(summary(fit))
 
+# Si utilizza la funzione predict() per ottenere le stime del modello
+# sulle età contenute in age.grid. Questo oggetto è una sequenza di valori
+# su tutto il range della variabile age, usata per costruire una linea
+# di previsione continua (a gradini). Il risultato viene salvato in pred_step.
+pred_step <- predict(fit, newdata = list(age = age.grid))
+
+# Per salvare il grafico
+png(paste(img_path, "/03_Step_Function.png", sep=""), width = 800, height = 600)
+
+# Si costruisce un grafico a dispersione dei dati originali: età (age)
+# sull'asse x e salario (wage) sull'asse y. Il dataset di riferimento è Wage.
+plot(wage ~ age, data = Wage, col = "gray", main = "Step Function")
+
+# Aggiungiamo al grafico precedente la linea delle previsioni ottenute
+# con la step function. La linea è costruita su age.grid (x) e pred_step (y).
+# Lo spessore della linea è aumentato con lwd = 3 per renderla più visibile.
+lines(age.grid, pred_step, lwd = 3, col = "blue")
+dev.off()
 
 
-###################
-## Basis Splines ##
-###################
+########################
+## Regression Splines ##
+########################
 
 #
 library(splines)
 
 #
-fit <- lm(wage ~ bs(age, knots = c(25, 40, 60)), data = Wage)
+fit <- lm(wage ~ bs(age, knots = c(25, 40, 60)), data = Wage) # default gradi polinomio = 3
+# Teoria - gradi di libertà: (K + d + 1) =
+# Nodi + Gradi polinomio + 1 = (3 + 3 + 1) = 7
 
 #
 pred <- predict(fit, newdata = list(age = age.grid), se = T)
@@ -312,9 +389,11 @@ lines(age.grid, pred$fit - 2 * pred$se, lty = "dashed")
 
 #
 dim(bs(age, knots = c(25, 40, 60)))
+# 3000    6
 
 #
 dim(bs(age, df = 6))
+# 3000    6
 
 #
 attr(bs(age, df = 6), "knots")
@@ -327,6 +406,14 @@ attr(bs(age, df = 6), "knots")
 
 #
 fit2 <- lm(wage ~ ns(age, df = 4), data = Wage)
+?Boundary.knots
+# 
+dim(ns(age, knots = c(25, 40, 60)))
+# 3000    6
+
+#
+dim(ns(age, knots = c(25, 40, 60)))
+# 3000    4
 
 #
 pred2 <- predict(fit2, newdata = list(age = age.grid), se = T)
