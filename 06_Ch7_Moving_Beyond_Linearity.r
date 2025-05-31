@@ -521,21 +521,76 @@ dev.off()
 ## Smoothing Splines ##
 #######################
 
+?smooth.spline
+# smooth.spline(x, y = NULL, w = NULL, df, spar = NULL, lambda = NULL, cv = FALSE,
+#               all.knots = FALSE, nknots = .nknots.smspl,
+#               keep.data = TRUE, df.offset = 0, penalty = 1,
+#               control.spar = list(), tol = 1e-6 * IQR(x), keep.stuff = FALSE)
 
-#
+# Si assegna all’oggetto fit l’output della funzione smooth.spline().
+# In questo caso:
+# - age è il vettore della variabile indipendente (ascisse, sull’asse x),
+# - wage è il vettore della variabile dipendente (ordinate, sull’asse y),
+# - df = 16 specifica il numero di gradi di libertà desiderati per la curva.
+#    Più df significa maggiore flessibilità: la curva seguirà più da vicino
+# i dati.
+#    Una spline con df troppo alto rischia però di overfittare (sovradattarsi).
 fit <- smooth.spline(age, wage, df = 16)
 
-#
+# Si assegna all’oggetto fit2 l’output della funzione smooth.spline(),
+# sempre specificando:
+# - age (variabile indipendente),
+# - wage (variabile dipendente),
+# ma in questo caso:
+# - cv = TRUE attiva la validazione incrociata leave-one-out per determinare
+#   automaticamente il grado ottimale di smoothing (cioè il miglior compromesso
+#   tra adattamento ai dati e semplicità della curva),
+# - il parametro di smoothong scelto tramite CV determina internamente il valore
+#   del parametro lambda, che controlla la penalizzazione sulla curvatura della
+# spline.
 fit2 <- smooth.spline(age, wage, cv = TRUE)
+names(fit2)
+#  [1] "x"          "y"          "w"          "yin"        "tol"
+#  [6] "data"       "no.weights" "n"          "lev"        "cv"
+# [11] "cv.crit"    "pen.crit"   "crit"       "df"         "spar"
+# [16] "ratio"      "lambda"     "iparms"     "auxM"       "fit"
+# [21] "call"
 
-#
-fit2$df
+# Si verifica se è stata applicata la cross-validation nei due modelli.
+# Nel primo caso (fit) è FALSE, nel secondo (fit2) è TRUE.
+fit$cv # FALSE
+fit2$cv # TRUE
+
+# Si esamina il valore del parametro di penalizzazione lambda, utilizzato
+# internamente per controllare la levigatezza della spline. Un valore basso
+# indica una curva molto flessibile, un valore alto produce una
+# curva più liscia.
+fit$lambda # 0.0006537868
+fit2$lambda # 0.02792303
+
+# Si estraggono i gradi di libertà effettivi delle curve stimate.
+# Nel primo caso (fit) sono stati fissati manualmente a 16.
+# Nel secondo (fit2) il valore è stato scelto automaticamente dalla funzione
+# in base al criterio di cross-validation, e risulta più basso.
+fit$df # 16.00237
+fit2$df # 6.794596
 
 # Per salvare il grafico
 png(paste(img_path, "/06_Smoothig_Splines.png", sep=""), width = 800, height = 600)
 
 
-#
+# Si costruisce un grafico scatterplot utilizzando la funzione plot() in cui
+# si rappresentano i valori osservati delle variabili age e wage, con i punti
+# colorati in grigio.
+# Si assegna un titolo al grafico tramite la funzione title()
+# Si aggiunge al grafico la curva stimata utilizzando la smoothing spline
+# precedentemente creata e salvata in fit, in rosso e con uno
+# spessore della linea pari a 2.
+# Si aggiunge al grafico la curva stimata utilizzando la smoothing spline
+# precedentemente creata e salvata in fit2, in blu e con uno
+# spessore della linea pari a 2.
+# Attraverso la funzione legend() aggiungiamo una legenda al grafico
+# in posizione in alto a destra
 plot(age, wage, xlim = agelims, cex = .5, col = "darkgrey")
 title("Smoothing Spline")
 lines(fit, col = "red", lwd = 2)
