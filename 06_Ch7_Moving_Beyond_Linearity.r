@@ -434,30 +434,92 @@ attr(bs(age, df = 6), "knots")
 ## Natural Splines ##
 #####################
 
-#
+# Si assegna all'oggetto fit2 l'output della funzione lm() attraverso
+# la quale si implementa una Natural Spline Regression, ovvero una
+# regressione lineare in cui la variabile esplicativa age viene trasformata
+# mediante la funzione ns() (natural spline) con 5 gradi di libertà.
+# Nella teoria una Cubic Spline generica con 5 nodi dovrebbe avere
+# K + d + 1 = 5 + 3 + 1 = 9 gradi di libertà. Una Natural Cubic Spline
+# con 5 nodi (3 interni e 2 agli estremi dell'intervallo) possiamo
+# dire che ha K + d + 1 = 5 + 3 + 1 = 9 gradi di libertà, ma dato che agli
+# estremi dell'intervallo essendo delle funzioni lineari (e non cubiche)
+# dobbiamo stimare solo b0 e b1 (quindi non b2 e b3) che togliendo questi
+# parametri in entrambi gli estremi avremo 9 - 4 = 5 gradi di libertà.
+# Inoltre, poichè come in bs() non vogliamo aggiungere l'intercetta
+# ad R dobbiamo assegnare df = 4 (e non df = 5; ma questo è solo un
+# tecnicismo utile all'implementazione)
+# Le natural splines sono spline cubiche soggette a vincoli di linearità
+# agli estremi (oltre i boundary), che garantiscono una maggiore stabilità
+# della stima ai bordi del dominio.
 fit2 <- lm(wage ~ ns(age, df = 4), data = Wage)
+
+# Si richiama la documentazione relativa all’argomento Boundary.knots,
+# utile per comprendere dove vengono posizionati i nodi e come vengono
+# gestiti gli estremi (vincolo di linearità fuori dall'intervallo).
 ?Boundary.knots
-# 
+
+# Viene riportata la dimensione della base di regressione generata dalla
+# funzione ns() applicata alla variabile age, con nodi fissati nei punti
+# 25, 40 e 60. Il risultato mostra una matrice con 3000 righe (una per ogni
+# osservazione) e 4 colonne, corrispondenti al numero di gradi di libertà
+# specificato, ovvero 4 funzioni di base per la natural spline.
 dim(ns(age, knots = c(25, 40, 60)))
+# [1] 3000    4
+
+# Si assegna all'oggetto pred2 l'output della funzione predict() applicata
+# all’oggetto fit2 su un nuovo insieme di dati: la griglia di valori age.grid,
+# in modo da ottenere le stime dei salari previsti lungo il dominio di age.
+# L'opzione se = T permette inoltre di calcolare l’errore standard associato
+# ad ogni previsione, utile per costruire bande di confidenza.
+pred2 <- predict(fit2, newdata = list(age = age.grid), se = T)
+
+
+# Esempio conteggio dei df per bs() e ns():
+?bs
+?ns # è necessariamente cubica
+
+# K + d + 1 = 3 + 3 + 1 = 7 (o per R: 6 + intercetta)
+dim(bs(age, knots = c(25, 40, 60), degree = 3))
 # 3000    6
 
-#
+# K + d + 1 = (3+2) + 3 + 1 = 9 - 4 = 5 (o per R: 4 + intercetta)
 dim(ns(age, knots = c(25, 40, 60)))
 # 3000    4
 
-#
-pred2 <- predict(fit2, newdata = list(age = age.grid), se = T)
+#################
 
-#
+# K + d + 1 = 4 + 3 + 1 = 8 (o per R: 7 + intercetta)
+dim(bs(age, knots = c(25, 30, 35, 60), degree = 3))
+# 3000    7
+
+# K + d + 1 = (4+2) + 3 + 1 = 10 - 4 = 6 (o per R: 5 + intercetta)
+dim(ns(age, knots = c(25, 30, 35, 60)))
+# 3000    5
+
+
+# Per salvare il grafico
+png(paste(img_path, "/05_Natural_Splines_3-Degree_3-Knots.png", sep=""), width = 800, height = 600)
+
+
+# Si costruisce un grafico scatterplot utilizzando la funzione plot() in cui
+# si rappresentano i valori osservati delle variabili age e wage, con i punti
+# colorati in grigio.
+# Si aggiunge al grafico la curva stimata dal modello natural spline
+# precedentemente creato e salvato in pred2$fit, in rosso e con uno
+# spessore della linea pari a 2.
+# L'asse x è rappresentato da age.grid, cioè una griglia di valori su cui sono
+# state effettuate le predizioni.
+# Si assegna un titolo al grafico tramite la funzione title()
 plot(age, wage, col = "gray")
 lines(age.grid, pred2$fit, col = "red", lwd = 2)
+title("Natural Spline")
+dev.off()
 
 
 
 #######################
 ## Smoothing Splines ##
 #######################
-
 
 
 #
@@ -469,13 +531,17 @@ fit2 <- smooth.spline(age, wage, cv = TRUE)
 #
 fit2$df
 
+# Per salvare il grafico
+png(paste(img_path, "/06_Smoothig_Splines.png", sep=""), width = 800, height = 600)
+
+
 #
 plot(age, wage, xlim = agelims, cex = .5, col = "darkgrey")
 title("Smoothing Spline")
 lines(fit, col = "red", lwd = 2)
 lines(fit2, col = "blue", lwd = 2)
 legend("topright", legend = c("16 DF", "6.8 DF"), col = c("red", "blue"), lty = 1, lwd = 2, cex = .8)
-
+dev.off()
 
 
 ###########
@@ -489,13 +555,17 @@ fit <- loess(wage ~ age, span = .2, data = Wage)
 #
 fit2 <- loess(wage ~ age, span = .5, data = Wage)
 
+# Per salvare il grafico
+png(paste(img_path, "/07_LOESS.png", sep=""), width = 800, height = 600)
+
+
 #
 plot(age, wage, xlim = agelims, cex = .5, col = "darkgrey")
 title("Local Regression")
 lines(age.grid, predict(fit, data.frame(age = age.grid)), col = "red", lwd = 2)
 lines(age.grid, predict(fit2, data.frame(age = age.grid)), col = "blue", lwd = 2)
 legend("topright", legend = c("Span = 0.2", "Span = 0.5"), col = c("red", "blue"), lty = 1, lwd = 2, cex = .8)
-
+dev.off()
 
 
 #########
