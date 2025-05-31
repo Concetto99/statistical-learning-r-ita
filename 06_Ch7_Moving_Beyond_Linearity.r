@@ -603,18 +603,38 @@ dev.off()
 ## LOESS ##
 ###########
 
+?loess
+# loess(formula, data, weights, subset, na.action, model = FALSE,
+#       span = 0.75, enp.target, degree = 2,
+#       parametric = FALSE, drop.square = FALSE, normalize = TRUE,
+#       family = c("gaussian", "symmetric"),
+#       method = c("loess", "model.frame"),
+#       control = loess.control(...), ...)
 
-#
+# Assegniamo all’oggetto fit l’output della funzione loess()
+# per stimare una regressione locale di wage su age,
+# utilizzando come span 0.2 → significa che per ogni punto di età,
+# il 20% più vicino dei dati viene usato per stimare la curva.
+# Un valore di span più piccolo produce una curva più flessibile,
+# ma meno liscia.
 fit <- loess(wage ~ age, span = .2, data = Wage)
 
-#
+# Assegniamo all’oggetto fit2 una stima LOESS con uno span più
+# grande (0.5), che implica un maggiore livello di smoothing:
+# ogni punto stimato tiene conto di una porzione più ampia di
+# osservazioni. Questo riduce la varianza ma può aumentare il bias.
 fit2 <- loess(wage ~ age, span = .5, data = Wage)
 
 # Per salvare il grafico
 png(paste(img_path, "/07_LOESS.png", sep=""), width = 800, height = 600)
 
-
-#
+# Attraverso la funzione plot() stampiamo lo scatterplot in cui è presente
+# la variabile age sull'asse delle ascisse e wage sull'asse delle ordinate.
+# I punti avranno spessore 0.5 e sono di colore grigio scuro
+# Aggiungiamo il titolo al grafico con la funzione title().
+# Aggiungiamo la curva stimata tramite LOESS con span = 0.2 con colore rosso e
+# la curva con span = 0.5 con colore blu. Aggiungiamo infine la legenda al
+# grafico in alto a destra
 plot(age, wage, xlim = agelims, cex = .5, col = "darkgrey")
 title("Local Regression")
 lines(age.grid, predict(fit, data.frame(age = age.grid)), col = "red", lwd = 2)
@@ -691,4 +711,3 @@ gam.lr.s <- gam(
  subset = (education != "1. < HS Grad")
  )
 plot(gam.lr.s, se = T, col = "green")
-
