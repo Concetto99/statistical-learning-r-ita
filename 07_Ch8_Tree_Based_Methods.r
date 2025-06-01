@@ -384,59 +384,139 @@ mean((yhat - boston.test)^2)
 # Se mtry < n.totale di variabili allora Random Forest
 # ma il comando resta sempre randomForest()
 
-#
+# Attraverso il comando library() carichiamo il pacchetto randomForest
+# il quale contiene l'omonima funzione e altre funzione utili
+# install.packages("randomForest")
 library(randomForest)
 
-#
 set.seed(1)
 
-#
+# Si assegna all’oggetto bag.boston l’output della funzione randomForest(),
+# che implementa un algoritmo di Bagging (Bootstrap Aggregating) tramite alberi
+# di regressione: vengono generati più alberi su campioni bootstrap differenti
+# del training set, e le loro previsioni vengono mediate per ridurre la varianza
+# del modello. In particolare:
+# - formula medv ~ . indica che vogliamo predire il valore mediano delle abitazioni
+#   (medv) utilizzando tutte le altre variabili del dataset come predittori
+# - data = Boston specifica il dataset da cui attingere i dati
+# - subset = train indica che il modello viene stimato solo sul sottoinsieme di dati
+#   definito dal vettore train (training set)
+# - mtry = 12 impone che ciascun albero consideri tutte e 12 le variabili in ogni split,
+#   condizione che definisce il Bagging (anziché una Random Forest, dove mtry < 12)
+# - importance = TRUE consente di calcolare l’importanza relativa delle variabili predittive
 bag.boston <- randomForest(medv ~ ., data = Boston, subset = train, mtry = 12, importance = TRUE) 
 bag.boston
+# Call:
+#  randomForest(formula = medv ~ .,data = Boston,mtry = 12,importance = TRUE,subset = train)
+#                Type of random forest: regression
+#                      Number of trees: 500
+# No. of variables tried at each split: 12
+# 
+#           Mean of squared residuals: 15.74801
+#                     % Var explained: 81.84
 
-#
+# Si assegna all'oggetto yhat.bag il vettore delle previsioni per le
+# unità di test assegnate al parametro newdata, vengono selezionate
+# tutte le colonne di Boston e le sole righe i cui indici non sono
+# contenuti come elementi del dataset train
 yhat.bag <- predict(bag.boston, newdata = Boston[-train, ])
 
-#
+# Per salvare il grafico
+png(paste(img_path, "/05_Bagging_Scatterplot_Osservato_Previsto.png", sep=""), width = 800, height = 600)
+
+# Attraverso la funzione plot() si ottiene lo scatterplot in cui nell'asse
+# delle ascisse viene rappresentato il vettore delle previsioni e nell'asse
+# delle ordinate il vettore dei valori osservati.
+# Infine viene rappresentata la curva passante per l'origine degli assi, questo
+# servirà a facilitare un confronto tra osservato e predetto
 plot(yhat.bag, boston.test)
-
-#
 abline(0, 1)
+dev.off()
 
-#
+# Attraverso il comando seguente è possibile calcolare la media degli
+# scarti al quadrato tra previsto e osservato per i dati di test o più
+# in generale l'MSE di test
 mean((yhat.bag - boston.test)^2)
+# 18.52237
 
-#
+# Si assegna adesso all'oggetto bag.boston l'output della funzione randomForest,
+# come fatto in precedenza ma in questo caso si aggiunge come parametro della
+# funzione ntree = 25, dunque solamente 25 alberi (di default sono 500)
+# Ciò potrebbe far aumentare la varianza del previsore rispetto al caso precedente,
+# in quanto prima venivano utilizzati 500 alberi
 bag.boston <- randomForest(medv ~ ., data = Boston, subset = train, mtry = 12, ntree = 25)
 
-#
+# Viene assegnato a yhat.bag il vettore delle previsioni per le osservazioni
+# di test come fatto in precedenza
 yhat.bag <- predict(bag.boston, newdata = Boston[-train, ])
 
-#
+# Calcoliamo l'MSE di test
 mean((yhat.bag - boston.test)^2)
+# 19.52548
+
+# è leggermente aumentato passando da 500 alberi a 25, ma come possiamo
+# notare non di tantissimo. 500 potrebbe essere quindi uno spreco di risorse,
+# potremmo accontentarci di un numero relativamente più contenuto
+
 
 
 ###################
 ## Random Forest ##
 ###################
 
-#
 set.seed(1)
 
-#
+# Si assegna alla funzione rf.boston l'output della funzione randomForest() la quale
+# ci permette di implementare l'algoritmo di Random forest su degli alberi di
+# di regressione (medv quantitativa).
+# La variabile di risposta del modello è medv, mentre le variabili indipendenti
+# le restanti colonne di Boston. Si implementa l'algoritmo per la partizione
+# di Boston i cui indici di riga sono contenuti nel vettore train.
+# Attraverso il parametro mtry = 6, specifichiamo quante variabili devono essere
+# estratte casualmente dalle 12 variabili a disposizione per la costruzione di ogni
+# singolo albero di regressione, ciò ci permette di decorrelare gli alberi.
+# Il parametro importance = TRUE permette di calcolare misure quantitative
+# dell’importanza di ciascuna variabile predittiva, utili per l’interpretazione del modello
 rf.boston <- randomForest(medv ~ ., data = Boston,subset = train, mtry = 6, importance = TRUE)
+rf.boston
 
-#
+# Si assegna all'oggetto yhat.rf il vettore delle previsioni per le
+# unità di test assegnate al parametro newdata, vengono selezionate
+# tutte le colonne di Boston e le sole righe i cui indici non sono
+# contenuti come elementi del dataset train
 yhat.rf <- predict(rf.boston, newdata = Boston[-train, ])
 
-#
+# Calcoliamo l'MSE di test
 mean((yhat.rf - boston.test)^2)
+# 18.03941
 
-#
+# Si utilizza la funzione importance() per visualizzare l’importanza relativa
+# delle variabili nel modello Random Forest (es. aumento dell’errore MSE o
+# riduzione dell’impurità media quando la variabile è esclusa)
 importance(rf.boston)
+#           %IncMSE IncNodePurity
+# crim    11.413450     532.13137
+# zn       2.236034      97.82974
+# indus   11.766260     914.71292
+# chas     1.623781      41.24927
+# nox      9.143657     569.29338
+# rm      30.211650    6619.48681
+# age     11.901297     620.24771
+# dis     13.036057     840.75789
+# rad      4.702573     135.18727
+# tax      8.565916     366.86390
+# ptratio 10.163513     473.95565
+# black    6.641653     281.55768
+# lstat   27.033827    5370.30884
 
-#
+# Per salvare il grafico
+png(paste(img_path, "/06_Random_Forest_VarImpPlot.png", sep=""), width = 800, height = 600)
+
+# Si utilizza la funzione varImpPlot() per produrre un grafico che mostra
+# l’importanza stimata delle variabili predittive in ordine decrescente
 varImpPlot(rf.boston)
+dev.off()
+
 
 
 ##############
