@@ -237,7 +237,7 @@ dev.off()
 prune.carseats <- prune.misclass(tree.carseats, best = 9)
 
 # Per salvare il grafico
-png(paste(img_path, "/02_Sub_Tree_Pruned.png", sep=""), width = 800, height = 600)
+png(paste(img_path, "/03_Sub_Tree_Pruned.png", sep=""), width = 800, height = 600)
 
 # Attraverso il comando plot() visualizziamo la struttura del miglio albero
 # decisionale potato al nono split, attravesrso il comando text() aggiungiamo al
@@ -323,39 +323,58 @@ summary(tree.boston)
 #      Min.   1st Qu.    Median      Mean   3rd Qu.      Max.
 # -18.54000  -2.16900   0.08461   0.00000   2.15900  15.14000
 
+# Per salvare il grafico
+png(paste(img_path, "/04_Regression_Tree.png", sep=""), width = 800, height = 600)
+
 # Attraverso il comando plot() visualizziamo la struttura dell'albero
 # decisionale ottenuto, attravesrso il comando text() aggiungiamo al
 # grafico le etichette in ogni nodo, senza abbreviazioni.
+par(mfrow=c(1,1))
 plot(tree.boston)
 text(tree.boston, pretty = 0)
+dev.off()
 
-# Assegniamo all'oggetto cv.boston l'output della funzione cv.tree attraverso
-# la quale è possibile implementare 
+# Assegniamo all'oggetto cv.boston l'output della funzione cv.tree()
+# che esegue la potatura dell'albero (cost complexity pruning) tramite
+# validazione incrociata, per identificare la dimensione ottimale
+# dell'albero che minimizza l'RSS
 cv.boston <- cv.tree(tree.boston)
 
-#
+# Viene disegnato un grafico in cui:
+# - sull'asse x è riportato il numero di nodi terminali (dimensione dell'albero)
+# - sull'asse y il valore di deviance ottenuto tramite cross-validation
+# - type = "b" indica che punti e linee devono essere tracciati entrambi
 plot(cv.boston$size, cv.boston$dev, type = "b")
 
-#
+# Si assegna all'oggetto prune.boston l'output della funzione prune.tree()
+# che restituisce una versione potata dell’albero iniziale, limitando
+# il numero di nodi terminali a 5 (best = 5), come scelto in base al plot precedente.
 prune.boston <- prune.tree(tree.boston, best = 5)
 
-#
+# Si visualizza graficamente l’albero potato
 plot(prune.boston)
 text(prune.boston, pretty = 0)
 
-#
+# Si assegna all’oggetto yhat il vettore delle predizioni del modello ad albero
+# originale (non potato), calcolate sui dati di test (cioè sulle osservazioni non
+# incluse nel training set)
 yhat <- predict(tree.boston, newdata = Boston[-train, ])
 
-#
+# Si assegna all’oggetto boston.test il vettore dei valori osservati della
+# variabile medv nel sottoinsieme di test (nella pratica si considerano tutte
+# le righe eccetto quelle il cui indice è presente come elemento di train)
 boston.test <- Boston[-train, "medv"]
 
-#
+# Si crea uno scatterplot in cui si confrontano le predizioni (yhat) con i valori
+# reali (boston.test). Se il modello fosse perfetto, i punti cadrebbero tutti sulla
+# retta y = x tracciata da abline(0,1).
 plot(yhat, boston.test)
 abline(0, 1)
 
-#
+# Si calcola l’errore quadratico medio (MSE) sulle osservazioni di test:
+# è una misura sintetica della bontà delle predizioni.
 mean((yhat - boston.test)^2)
-
+# 28.21663
 
 #############
 ## Bagging ##
