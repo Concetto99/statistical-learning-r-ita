@@ -517,41 +517,132 @@ png(paste(img_path, "/06_Random_Forest_VarImpPlot.png", sep=""), width = 800, he
 varImpPlot(rf.boston)
 dev.off()
 
+# Quante volte ogni osservazione rimane Out of Bag nella costruzione dei
+# campioni bootstrap
+rf.boston$oob.times
+#  [1] 194 175 172 183 174 176 197 188 175 184 176 183 167 152 200 180 182 180
+#  [19] 178 191 199 188 182 180 185 207 182 172 177 177 190 196 194 200 181 188
+#  [37] 188 188 192 177 178 188 188 184 190 186 192 204 183 200 176 177 171 178
+#  [55] 204 171 184 177 187 189 182 179 187 190 190 187 180 165 171 179 208 197
+#  [73] 168 176 178 184 188 205 181 183 186 182 171 176 195 172 192 185 167 172
+#  [91] 170 174 173 168 184 169 212 187 189 184 188 183 190 169 182 183 180 178
+# [109] 180 195 177 184 179 183 168 181 186 200 200 178 196 181 190 173 182 192
+# [127] 192 171 180 209 192 167 174 194 185 179 202 187 172 198 197 199 178 146
+# [145] 189 162 179 192 173 157 187 189 177 181 187 177 196 210 167 188 170 190
+# [163] 178 177 153 206 179 187 179 175 174 172 186 182 185 174 175 182 179 196
+# [181] 176 189 166 1
+
+# In media ogni osservazione rimane out of bag 183 volte su 500
+mean(rf.boston$oob.times)
+# 183.055
 
 
 ##############
 ## Boosting ##
 ##############
 
-#
+# Attraverso la funzione library() carichiamo il pacchetto gbm, il quale
+# contiene le funzione utili all'implementazione dell'algoritmo di Boosting
 library(gbm)
 
-#
 set.seed(1)
 
-#
+# Si assegna all'oggetto boost.boston l'output della funzione gbm()
+# attraverso la quale è possibile implementare il Boosting per degli
+# alberi di regressione in cui la variabile di risposta è medv e
+# come predittori le restanti variabili di Boston.
+# Al parametro data assegniamo il dataset Boston in cui sono presenti tutte le
+# colonne e solamente le righe i cui indici sono degli elementi del
+# vettore train. Essendo in regressione passiamo il parametro distribution =
+# "gaussian", assegniamo al parametro della funzione ntrees il numero di
+# alberi da considerare ed infine la profondità fin quanto vogliamo andare,
+# ovvero quanti split effettuare per ogni albero, in questo caso 4.
 boost.boston <- gbm(medv ~ ., data = Boston[train, ], distribution = "gaussian", n.trees = 5000, interaction.depth = 4)
+boost.boston
+# gbm(formula = medv ~ ., distribution = "gaussian", data = Boston[train,
+#     ], n.trees = 5000, interaction.depth = 4)
+# A gradient boosted model with gaussian loss function.
+# 5000 iterations were performed.
+# There were 13 predictors of which 13 had non-zero influence.
 
-#
+# Attraverso il comando summary() applicato ad un oggetto di classe gbm
+# otteniamo la tabella (ed allo stesso tempo anche il grafico) della misura
+# dell'infuenza relativa per ogni variabile, ovvero la riduzione dell'errore
+# quadratico attribuito a ciascuna variabile.
+# In pratica questa misura indica quanto vi è stata una riduzione nell'RSS
+# quando ha giocato una determinata variabile.
 summary(boost.boston)
+# tat     lstat 35.0294509
+# rm           rm 34.2227793
+# dis         dis  6.6633758
+# age         age  4.2752411
+# crim       crim  3.6513515
+# black     black  3.3118327
+# indus     indus  3.2288380
+# tax         tax  2.8526779
+# nox         nox  2.7432323
+# ptratio ptratio  2.2958185
+# rad         rad  1.1699964
+# zn           zn  0.3841339
+# chas       chas  0.1712718
 
-#
+# Viene prodotto un grafico di dipendenza parziale per la variabile "rm" (numero medio di stanze)
+# che mostra la relazione marginale tra "rm" e la variabile risposta, controllando per le altre variabili
 plot(boost.boston, i = "rm")
 
-#
+# Per salvare il grafico
+png(paste(img_path, "/07_Boosting_PartialDependencePlot.png", sep=""), width = 800, height = 600)
+
+# Grafico di dipendenza parziale per la variabile "lstat" (percentuale di popolazione a basso reddito)
 plot(boost.boston, i = "lstat")
+dev.off()
 
-#
+# Si calcolano le previsioni del modello boost.boston sul test set (Boston[-train, ])
+# specificando il numero di alberi da usare per il boosting (5000)
 yhat.boost <- predict(boost.boston, newdata = Boston[-train, ], n.trees = 5000)
+# 14.99186
 
-#
+# Si calcola l’errore quadratico medio tra le previsioni e i valori osservati nel test set
 mean((yhat.boost - boston.test)^2)
 
-#
+# Si costruisce un nuovo modello di boosting con parametro shrinkage (tasso di apprendimento) fissato a 0.2
+boost.boston <- gbm(medv ~ ., data = Boston[train, ], distribution = "gaussian",
+                    n.trees = 5000, interaction.depth = 4, shrinkage = 0.2, verbose = FALSE)
+
+# Si calcolano le previsioni del modello boost.boston sul test set (Boston[-train, ])
+# specificando il numero di alberi da usare per il boosting (5000)
 yhat.boost <- predict(boost.boston, newdata = Boston[-train, ], n.trees = 5000)
 
-#
-boost.boston <- gbm(medv ~ ., data = Boston[train, ], distribution = "gaussian", n.trees = 5000, minteraction.depth = 4, shrinkage = 0.2, verbose = F)
-
-#
+# Si calcola nuovamente l’errore quadratico medio sul test set
 mean((yhat.boost - boston.test)^2)
+# 16.86628
+
+# Si costruisce un secondo modello di boosting con shrinkage = 0.2 e numero di alberi pari a 1000
+boost.boston2 <- gbm(medv ~ ., data = Boston[train, ], distribution = "gaussian",
+                     n.trees = 1000, interaction.depth = 4, shrinkage = 0.2, verbose = FALSE)
+
+# Si crea un vettore di valori che rappresentano diversi numeri di alberi
+# da testare per valutare l’andamento dell’errore al crescere di n.trees
+n.trees <- seq(from = 100, to = 1000, by = 100)
+
+# Si ottiene una matrice di previsioni: ogni colonna corrisponde al numero di alberi
+# usati nella predizione, ogni riga a un'osservazione nel test set
+predmat <- predict(boost.boston2, newdata = Boston[-train, ], n.trees = n.trees)
+
+# Verifica della dimensione della matrice delle previsioni
+dim(predmat)
+# 306  10
+
+# Si calcola l’errore quadratico medio per ogni valore di n.trees (colonne di predmat)
+# confrontando le previsioni con i valori osservati nel test set
+berr <- with(Boston[-train, ], apply((predmat - medv)^2, 2, mean))
+
+# Per salvare il grafico
+png(paste(img_path, "/08_Boosting_TestError.png", sep=""), width = 800, height = 600)
+
+par(mfrow=c(1,1))
+# Si traccia il grafico dell’errore medio quadratico al variare del numero di alberi
+# per visualizzare il comportamento del test error e identificare un buon compromesso
+plot(n.trees, berr, pch = 19, ylab = "Mean Squared Error",
+     xlab = "# Trees", main = "Boosting Test Error", type = "b")
+dev.off()
