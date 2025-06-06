@@ -12,9 +12,9 @@ if (!dir.exists("img/03_Ch4_Classification")) {
   dir.create("img/03_Ch4_Classification")
 }
 
-img_path = "img/03_Ch4_Classification"
-
 remove(list = ls())
+
+img_path = "img/03_Ch4_Classification"
 
 # Attraverso il comando library() carichiamo il pacchetto ISLR2,
 # il quale contiene vari dataset e funzioni utili.
@@ -245,7 +245,7 @@ class(Direction.2005) # "factor"
 # data frame sono selezionate attraverso il parametro subset = train
 # che permette di selezionare l'i-esima riga di Smarket se l'elemento
 # i-esimo del vettore booleano train è uguale a TRUE
-glm.fits <- glm ( Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume,
+glm.fits <- glm( Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume,
     data = Smarket, family = binomial , subset = train)
 
 # Si assegna all'oggetto glm.probs il vettore delle previsioni utilizzando
@@ -277,12 +277,12 @@ mean(glm.pred != Direction.2005) # Test error
 # del modello sui dati di train e tenere da parte un dataset di test, ma
 # queta volta utilizziamo un modello più parsimonioso, ovvero con 2
 # variabili indipendenti, Lag1 e Lag2
-glm.fits <- glm (Direction ~ Lag1 + Lag2 , data = Smarket,
+glm.fits <- glm(Direction ~ Lag1 + Lag2 , data = Smarket,
     family = binomial , subset = train)
 
 glm.probs <- predict(glm.fits , Smarket.2005, type = "response")
 
-glm.pred <- rep ("Down", 252)
+glm.pred <- rep("Down", 252)
 
 glm.pred[glm.probs > .5] <- "Up"
 
@@ -314,8 +314,13 @@ library(pROC)
 # sull'asse delle ascisse la specificità e sull'asse delle
 # ordinate la sensitività
 ?roc
+
+# Per salvare il grafico
+png(paste(img_path, "/01_ROC_Logistic.png", sep=""), width = 800, height = 600)
+
 par(mfrow=c(1,1))
 roc(Direction.2005, glm.probs, plot=T, print.auc=T, col = "blue")
+dev.off()
 
 
 ##################################################
@@ -381,7 +386,12 @@ names(lda.fit) # Per vedere cosa contiene
 # (combinazioni lineari dei predittori) che LDA utilizza per discriminare
 # tra le classi.
 ?plot.lda
+
+# Per salvare il grafico
+png(paste(img_path, "/02_LDA_Plot.png", sep=""), width = 800, height = 600)
+
 plot(lda.fit)
+dev.off()
 
 # Se le due curve (Down/Up) sono ben separate, allora LDA ha trovato una buona
 # direzione discriminante.
