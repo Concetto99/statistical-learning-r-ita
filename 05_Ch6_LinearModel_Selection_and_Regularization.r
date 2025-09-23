@@ -12,9 +12,9 @@ if (!dir.exists("img/05_Ch6_LinearModel_Selection_and_Regularization")) {
   dir.create("img/05_Ch6_LinearModel_Selection_and_Regularization")
 }
 
-img_path = "img/05_Ch6_LinearModel_Selection_and_Regularization"
-
 remove(list = ls())
+
+img_path = "img/05_Ch6_LinearModel_Selection_and_Regularization"
 
 # Attraverso il comando library() carichiamo il pacchetto ISLR,
 # il quale contiene vari dataset e funzioni utili.
@@ -143,6 +143,9 @@ reg.summary <- summary(regfit.full)
 # selezionate
 reg.summary$rsq
 
+# Per salvare il grafico
+png(paste(img_path, "/01_BestSubSelection_RSS_Number_of_Variables.png", sep=""), width = 800, height = 600)
+
 # Il comando plot consente di visualizzare l'andamento della RSS (Residual
 # Sum of Squares) al variare del numero di variabili incluse nel modello.
 # Sull'asse delle ascisse sono riportati i numeri da 1 a 19, ciascuno
@@ -153,9 +156,14 @@ reg.summary$rsq
 # in modo da ottenere un grafico a linea continua, per osservare il trend.
 # Però, per questo tipo di grafico sarebbe più utile utilizzare type="b" per
 # avere contezza della spezzata (x è una variabile discreta)
-par(mfrow = c(1, 1))
+(mfrow = c(1, 1))
 plot(reg.summary$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
 # plot(reg.summary$rss, xlab = "Number of Variables", ylab = "RSS", type = "b")
+dev.off()
+
+# Per salvare il grafico
+png(paste(img_path, "/02_BestSubSelection_R2_AdjRsq_Number_of_Variables.png", sep=""), width = 800, height = 600)
+
 
 # Attraverso il comando plot, in seguito alla creazione di una finestra grafica
 # di due righe e 1 colonna, visualizziamo l'andamento dell'R2 e dell'R2
@@ -172,6 +180,7 @@ plot(reg.summary$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
 par(mfrow = c(2, 1))
 plot(reg.summary$rsq, xlab = "Number of Variables", ylab = "R2", type = "l")
 plot(reg.summary$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "l")
+dev.off()
 
 # Attraverso il comando which.max() applicato al vettore degli R2 adjusted
 # riportiamo in output il valore massimo del vettore
@@ -235,10 +244,14 @@ plot(regfit.full, scale = "r2")
 # l'R2 aumenta con l'aggiunta di variabili, ma non penalizza la complessità,
 # quindi da solo non è sufficiente per scegliere.
 
+# Per salvare il grafico
+png(paste(img_path, "/03_RegSubSelection_Adjr2_MatrixPlot.png", sep=""), width = 800, height = 600)
+
 plot(regfit.full, scale = "adjr2")
 # Visualizza i modelli in base alL'R2 aggiustato, che penalizza l'inclusione
 # di variabili inutili. Il picco nel grafico indica il modello con miglior
 # compromesso tra fit e parsimonia.
+dev.off()
 
 plot(regfit.full, scale = "Cp")
 # Mostra i modelli valutati secondo il Cp di Mallow.
@@ -798,6 +811,9 @@ cv.out$lambda[1:10]
 # [1] 264495.8 240998.7 219589.1 200081.4 182306.7 166111.1 151354.2 137908.3
 # [9] 125656.9 114493.9
 
+# Per salvare il grafico
+png(paste(img_path, "/04_Ridge_CVMSE_LogLambda.png", sep=""), width = 800, height = 600)
+
 # Attraverso il comando plot() associato ad un oggetto di classe cv.glmnet
 # otteniamo lo scatterplot che mostra l'andamento dell'MSE ottenuto via
 # cross validazione al variare dei valori di log lambda.
@@ -805,6 +821,7 @@ cv.out$lambda[1:10]
 # (per ogni lambda). La banda attorno ai punti è data da +- standard error,
 # ovvero l'incertezza associata alla misura (MSE) per ogni valore di lambda
 plot(cv.out)
+dev.off()
 
 # assegniamo all'oggetto bestlam il valore di lambda.min contenuto all'interno
 # dell'oggetto cv.out, corrispondente al valore di lambda che minimizza l'MSE
@@ -850,11 +867,15 @@ predict(out, type = "coefficients", s = bestlam)[1:20, ]
 # contenente una griglia di valori per il parametro lambda
 lasso.mod <- glmnet(x[train, ], y[train], alpha = 1, lambda = grid)
 
+# Per salvare il grafico
+png(paste(img_path, "/05_LASSO_Coefficients_L1Norm.png", sep=""), width = 800, height = 600)
+
 # Attraverso la funzione plot() applicata su un oggetto di classe glmnet
 # otteniamo il grafico che mostra come variano i coefficienti stimati
 # dei regressori al variare della norma L1. Ogni linea nel grafico
 # corrisponde ad un diverso predittore nel modello
 plot(lasso.mod)
+dev.off()
 
 # Definiamo il seme per la riproducibilità dei risultati in quanto
 # utilizziamo la funzione cv.glmnet()
@@ -968,11 +989,15 @@ pcr.fit <- pcr(Salary ~ ., data = Hitters, scale = TRUE, validation = "CV")
 # spiegata per ciascuna componente principale.
 summary(pcr.fit)
 
+# Per salvare il grafico
+png(paste(img_path, "/06_PCR_ValidationPlot.png", sep=""), width = 800, height = 600)
+
 # Tramite la funzione validationplot(), visualizziamo graficamente l'errore
 # di previsione (MSEP) al variare del numero di componenti principali.
 # Questo consente di valutare quanti componenti principali includere nel modello
 # per ottimizzare la capacità predittiva, riducendo l'overfitting.
 validationplot(pcr.fit, val.type = "MSEP")
+dev.off()
 
 # Si fissa il seme per garantire la riproducibilità dei risultati ottenuti
 # nella suddivisione del campione in training e test.
@@ -1083,12 +1108,15 @@ summary(pls.fit)
 # X          99.61     99.70     99.95    100.00
 # Salary     58.17     58.49     58.56     58.62
 
+# Per salvare il grafico
+png(paste(img_path, "/07_PLS_ValidationPlot.png", sep=""), width = 800, height = 600)
 
 # Si utilizza la funzione validationplot() per visualizzare graficamente
 # l'andamento del Mean Squared Error of Prediction (MSEP) al variare del
 # numero di componenti principali. Questo consente di identificare il numero
 # ottimale di componenti da usare per minimizzare l'errore di previsione.
 validationplot(pls.fit, val.type = "MSEP")
+dev.off()
 
 # Si assegnano a pls.pred le previsioni ottenute tramite il modello pls.fit
 # applicato ai dati di test (x[test, ]) utilizzando soltanto la prima componente
