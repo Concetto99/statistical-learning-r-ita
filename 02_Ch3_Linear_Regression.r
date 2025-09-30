@@ -2,7 +2,10 @@
 #### [121] 3.6 Linear Regression ####
 #####################################
 
+remove(list = ls())
+
 # Creazione directory per salvare i grafici
+
 
 if (!dir.exists("img")) {
   dir.create("img")
@@ -11,9 +14,8 @@ if (!dir.exists("img")) {
 if (!dir.exists("img/02_Ch3_Linear_Regression")) {
   dir.create("img/02_Ch3_Linear_Regression")
 }
-img_path = "img/02_Ch3_Linear_Regression"
 
-remove(list = ls())
+img_path <- "img/02_Ch3_Linear_Regression"
 
 # Attraverso il comando library() carichiamo i pacchetti MASS e ISLR2.
 # I due pacchetti contengono vari dataset e funzioni utili.
@@ -108,6 +110,8 @@ predict(lm.fit, data.frame(lstat = (c(5, 10, 15))), interval = "prediction")
 # variabili del dataset Boston
 attach(Boston)
 
+png(paste(img_path, "/01_linear_model.png", sep=""), width = 800, height = 600)
+
 # Attraverso la funzione plot() è possibile ottenere un grafico a dispersione
 # tra le variabili lstat (asse delle ascisse) e medv (asse delle ordinate)
 par(mfrow = c(1, 1)) # Settare la finestra grafica
@@ -118,6 +122,8 @@ plot(lstat, medv)
 abline(lm.fit)
 abline(lm.fit, lwd = 3) # linea con spessore pari a 3
 abline(lm.fit, lwd = 3, col = "red") # linea con spessore pari a 3 e colore rosso
+
+dev.off()
 
 # Attraverso i comandi sottostanti, in seguito all'impostazione di una
 # finestra grafica di 4 grafici disposti in 2 righe e due colonne,
